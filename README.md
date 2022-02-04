@@ -7,7 +7,7 @@
 ### Approach 1: fastp + fix restriction enzyme site
 
 #### Filter Illumina adapters and fix bases in read overlap with [fastp](https://github.com/OpenGene/fastp)
-** See ./davidsonii_F2_ddRAD/scripts/filter_adapters
+* See `./davidsonii_F2_ddRAD/scripts/filter_adapters/`
 
 ```
 #!/bin/sh
@@ -42,7 +42,23 @@ do
 done
 ```
 
+#### Fix the restriction site using python script 'recoverRE.py'
+* (original code from [Matt Gibson](https://github.com/gibsonMatt/pimpGEA/blob/master/scripts/recoverREsite/recoverRE.py)
+* See `./davidsonii_F2_ddRAD/scripts/recover_RE/`
 
+```
+python recoverRE.py --truesite AATTC --startpos 1 --endpos 5 --out 
+
+
+
+#Read 1
+python recoverRE.py --truesite TGCAG --startpos 6 --endpos 10 --out /N/dc2/projects/gibsonTomato/pimpGEA/data/recoverREsite/poolA/GSF1870-Moyle-PoolA-Index-ACAGTG_S5_R1_001_noadapters_refix.fastq /N/dc2/projects/gibsonTomato/pimpGEA/data/adapter_clean_rawdata/poolA/GSF1870-Moyle-PoolA-Index-ACAGTG_S5_R1_001_noadapters.fastq
+
+#Read 2
+python recoverRE.py --truesite AATTC --startpos 1 --endpos 5 --out /N/dc2/projects/gibsonTomato/pimpGEA/data/recoverREsite/poolA/GSF1870-Moyle-PoolA-Index-ACAGTG_S5_R2_001_noadapters_refix.fastq /N/dc2/projects/gibsonTomato/pimpGEA/data/adapter_clean_rawdata/poolA/GSF1870-Moyle-PoolA-Index-ACAGTG_S5_R2_001_noadapters.fastq
+
+#...done for all index libraries
+```
 
 
 
