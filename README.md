@@ -51,6 +51,10 @@ do
 done
 ```
 
+## Next step is to... run this through bwa I suppose?
+## Need some kind of metric for seeing if this worked ok. So... ?
+## investigate these html files I suppose...
+
 
 ### *ipyrad* testing... (includes strict filter for Illumina adapter)
 #### referenced assembly, no RE recovery, no trimming:
@@ -62,6 +66,9 @@ done
 
 
 
+
+
+# this didn't work great, so probably not going to do it (didn't like file type, and I don't know enough about it..."
 
 #### Fix the restriction site using python script 'recoverRE.py'
 * (original code from [Matt Gibson](https://github.com/gibsonMatt/pimpGEA/blob/master/scripts/recoverREsite/recoverRE.py)
