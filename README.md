@@ -4,43 +4,64 @@
 * data demultiplexed by Kate Ostevik using Sabre script (should link that here)
 * Two parent individuals (DNT and PP) appear to have proper RE overhang, with an additional 'C' base at the beginning. This pattern is not apparent in the F2 data (either raw or demux files)
 
-### Approach 1: fastp + fix restriction enzyme site
-
+### Preprocessing: Approach 1
 #### Filter Illumina adapters and fix bases in read overlap with [fastp](https://github.com/OpenGene/fastp)
-* See `./davidsonii_F2_ddRAD/scripts/filter_adapters/`
+* See `./davidsonii_F2_ddRAD/scripts/preprocessing/`
+* Illumina adapter trimming enabled by default
+* low complexity filter enabled
+    - -y (default 30% complexity)
+* Remove reads of length <30 bp
+    - --length_required 30
+* Correct low-quality base calles in overlapping regions of paired-end reads
+    - -c (minimum 30 bp overlap = default)
+* 16 threads
+    - -w 16
+* Evaluate duplication rate and remove duplicated reads
+    - -D (default duplication calculation accuracy = 3)
+* Sliding window cutting enabled: 15% of read length, qs <15. This interferes with deduplication of data.
+    - --cut_front
+    - -W 22 (22 bp is ~15% of read length)
+    - --cut_front_mean_quality 15
 
 ```
 #!/bin/sh
 
 #SBATCH -N 1
-#SBATCH -n 10
+#SBATCH -n 16
 #SBATCH -p wessinger-48core
 #SBATCH --job-name=testrun_fastp
 
 cd $SLURM_SUBMIT_DIR
 
-#specify conda environment
-source /home/bs66/.bashrc
-source /home/bs66/.bash_profile
-conda activate ddradQC 
+
+#path to fastp
+fastpdir="/work/bs66/software"
+
+#path to demultiplexed files
+demuxdir="/work/bs66/davidsonii_mapping/demuxed"
 
 
-#probably a better way to do this but whatever
-#if data are not already demultiplexed then one can simply link to the fastq file containing all reads
-dumbnumbers=("01" "02" "03" "04" "05" "06" "07" "08" "09" "DNT006" "PP56")
-
-#for loop for the samples that do not conform to standard numbering scheme
-for i in "${dumbnumbers[@]}"
+#fastp for loop
+for r1in in $demuxdir/*.F.fq.gz; 
 do
-	fastp -i /work/bs66/davidsonii_mapping/demuxed/PopF2_"$i".F.fq.gz -I /work/bs66/davidsonii_mapping/demuxed/PopF2_"$i".R.fq.gz -o PopF2_"$i".F.noadapters.fq.gz -O PopF2_"$i".R.noadapters.fq.gz -h output_fastp_"$i".html - j output_fastp_"$i".json -Q -L -w 10
-done
-
-#for loop for standard numbers.
-for j in {10..84}
-do
-	fastp -i /work/bs66/davidsonii_mapping/demuxed/PopF2_"$j".F.fq.gz -I /work/bs66/davidsonii_mapping/demuxed/PopF2_"$j".R.fq.gz -o PopF2_"$j".F.noadapters.fq.gz -O PopF2_"$j".R.noadapters.fq.gz -h output_fastp_"$j".html - j output_fastp_"$j".json -Q -L -w 10
+    r2in="${r1in/F.fq.gz/R.fq.gz}"
+    r1out="${r1in##*/}"
+    r2out="${r1out/F.fq.gz/R.fq.gz}"
+    $fastpdir/./fastp -i "$r1in" -I "$r2in" -o "${r1out/F.fq/F.postfastp.fq}" -O "${r2out/R.fq/R.postfastp.fq}" -y --length_required 30 -c -w 16 -D --cut_front -W 22 --cut_front_mean_quality 15 -h "${r1out/F.fq.gz/html}" -j "${r1out/F.fq.gz/json}"
 done
 ```
+
+
+### *ipyrad* testing... (includes strict filter for Illumina adapter)
+#### referenced assembly, no RE recovery, no trimming:
+#### referenced assembly, no RE recovery, trim first 5 bp of R1:
+#### referenced assembly, no RE recovery, trim first 5 bp R1, first 3 bp R2:
+
+
+
+
+
+
 
 #### Fix the restriction site using python script 'recoverRE.py'
 * (original code from [Matt Gibson](https://github.com/gibsonMatt/pimpGEA/blob/master/scripts/recoverREsite/recoverRE.py)
@@ -63,10 +84,9 @@ python recoverRE.py --truesite AATTC --startpos 1 --endpos 5 --out /N/dc2/projec
 
 
 
-### *ipyrad* testing... (includes strict filter for Illumina adapter)
-#### referenced assembly, no RE recovery, no trimming:
-#### referenced assembly, no RE recovery, trim first 5 bp of R1:
-#### referenced assembly, no RE recovery, trim first 5 bp R1, first 3 bp R2:
+
+
+
 
 
 
