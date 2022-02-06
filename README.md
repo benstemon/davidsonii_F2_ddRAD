@@ -4,8 +4,8 @@
 * data demultiplexed by Kate Ostevik using Sabre script (should link that here)
 * Two parent individuals (DNT and PP) appear to have proper RE overhang, with an additional 'C' base at the beginning. This pattern is not apparent in the F2 data (either raw or demux files)
 
-### Preprocessing: Approach 1 (fastp -> stacks)
-#### Filter Illumina adapters and fix bases in read overlap with [fastp](https://github.com/OpenGene/fastp)
+## Preprocessing: Approach 1 (fastp -> stacks)
+### Filter Illumina adapters and fix bases in read overlap with [fastp](https://github.com/OpenGene/fastp)
 * See `./davidsonii_F2_ddRAD/scripts/preprocessing/`
 * Illumina adapter trimming enabled by default
 * Disable quality filtering
@@ -47,7 +47,7 @@ do
 done
 ```
 
-#### Use process_radtags in stacks to rescue  restriction enzyme cutsite when possible and filter low quality reads with sliding window approach
+### Use process_radtags in stacks to rescue  restriction enzyme cutsite when possible and filter low quality reads with sliding window approach
 * Clean data, removing any read with an uncalled base
     - -c
 * Discard reads with low quality scores
