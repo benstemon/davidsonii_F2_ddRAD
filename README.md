@@ -47,7 +47,7 @@ do
 done
 ```
 
-## Use process_radtags in stacks to correct for restriction enzyme cutsite
+#### Use process_radtags in stacks to rescue  restriction enzyme cutsite when possible and filter low quality reads with sliding window approach
 * Clean data, removing any read with an uncalled base
     - -c
 * Discard reads with low quality scores
