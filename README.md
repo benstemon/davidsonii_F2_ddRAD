@@ -4,7 +4,7 @@
 * data demultiplexed by Kate Ostevik using Sabre script (should link that here)
 * Two parent individuals (DNT and PP) appear to have proper RE overhang, with an additional 'C' base at the beginning. This pattern is not apparent in the F2 data (either raw or demux files)
 
-### Preprocessing: Approach 1
+### Preprocessing: Approach 1 (fastp -> stacks)
 #### Filter Illumina adapters and fix bases in read overlap with [fastp](https://github.com/OpenGene/fastp)
 * See `./davidsonii_F2_ddRAD/scripts/preprocessing/`
 * Illumina adapter trimming enabled by default
@@ -19,7 +19,8 @@
 * Evaluate duplication rate and remove duplicated reads
     - -D (default duplication calculation accuracy = 3)
 
-```#!/bin/sh
+```
+#!/bin/sh
 
 #SBATCH -N 1
 #SBATCH -n 16
@@ -47,17 +48,17 @@ done
 ```
 
 ## Use process_radtags in stacks to correct for restriction enzyme cutsite
-* clean data, removing any read with an uncalled base
+* Clean data, removing any read with an uncalled base
     - -c
-*  discard reads with low quality scores
+* Discard reads with low quality scores
     - -q
-* rescue RAD-Tags
+* Rescue RAD-Tags
     - -r
-* sliding window of 15% of read length
+* Sliding window of 15% of read length
     - -w 0.15 (default = 0.15)
-* read discarded if average score within sliding window drops below this value
+* Read discarded if average score within sliding window drops below this value
     - -s 10 (default = 10)
-* drop reads less than 30 bp
+* Drop reads less than 30 bp
     - --len_limit 30
 
 ```
@@ -88,6 +89,7 @@ done
 
 Interesting... there is a very high and very consistent amount of RAD cutsites not found (~80) for each sample.
 Is there something I'm not understanding here?
+
 
 ### *ipyrad* testing... (includes strict filter for Illumina adapter)
 #### referenced assembly, no RE recovery, no trimming:
