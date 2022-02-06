@@ -19,8 +19,7 @@
 * Evaluate duplication rate and remove duplicated reads
     - -D (default duplication calculation accuracy = 3)
 
-```
-#!/bin/sh
+```#!/bin/sh
 
 #SBATCH -N 1
 #SBATCH -n 16
@@ -43,11 +42,11 @@ do
     r2in="${r1in/F.fq.gz/R.fq.gz}"
     r1out="${r1in##*/}"
     r2out="${r1out/F.fq.gz/R.fq.gz}"
-    $fastpdir/./fastp -i "$r1in" -I "$r2in" -o "${r1out/F.fq/F.postfastp.fq}" -O "${r2out/R.fq/R.postfastp.fq}" -Q --length_required 30 -c -w 16 -D -h "${r1out/F.fq.gz/html}" -j "${r1out/F.fq.gz/json}"
+    $fastpdir/./fastp -i "$r1in" -I "$r2in" -o "${r1out/PopF2_/PopF2_R1_}" -O "${r2out/PopF2_/PopF2_R2_}" -Q --length_required 30 -c -w 16 -D -h "${r1out/F.fq.gz/html}" -j "${r1out/F.fq.gz/json}"
 done
 ```
 
-## use process radtags in stacks to correct for restriction enzyme cutsite
+## Use process_radtags in stacks to correct for restriction enzyme cutsite
 * clean data, removing any read with an uncalled base
     - -c
 *  discard reads with low quality scores
@@ -65,9 +64,9 @@ done
 #!/bin/sh
 
 #SBATCH -N 1
-#SBATCH -n 
+#SBATCH -n 10 
 #SBATCH -p wessinger-48core
-#SBATCH --job-name=testrun_fastp
+#SBATCH --job-name=testrun_stacks
 
 
 cd $SLURM_SUBMIT_DIR
@@ -76,12 +75,19 @@ cd $SLURM_SUBMIT_DIR
 module load stacks/gcc/2.41
 
 
-infilepath="/work/bs66/davidsonii_mapping/preprocessing_v1"
+infilepath="/work/bs66/davidsonii_mapping/preprocessing_v1/fastp_outfiles"
 outfilepath="/work/bs66/davidsonii_mapping/preprocessing_v1/stacks_output"
 
 
-process_radtags --paired -p $infilepath -i gzfastq -o $outfilepath --renz_1 'ecoRI' --renz_2 'mspI' -c -q -r -w 0.15 -s 10 --len_limit 30
+for r1in in $infilepath/PopF2_R1_*;
+do
+    r2in="${r1in/_R1_/_R2_}"
+    process_radtags --paired -1 $r1in -2 $r2in -i gzfastq -o $outfilepath --renz_1 'ecoRI' --renz_2 'mspI' -c -q -r -w 0.15 -s 10 --len_limit 30
+done
 ```
+
+Interesting... there is a very high and very consistent amount of RAD cutsites not found (~80) for each sample.
+Is there something I'm not understanding here?
 
 ### *ipyrad* testing... (includes strict filter for Illumina adapter)
 #### referenced assembly, no RE recovery, no trimming:
