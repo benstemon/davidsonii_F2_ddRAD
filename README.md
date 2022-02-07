@@ -4,7 +4,7 @@
 * data demultiplexed by Kate Ostevik using Sabre script (should link that here)
 * Two parent individuals (DNT and PP) appear to have proper RE overhang, with an additional 'C' base at the beginning. This pattern is not apparent in the F2 data (either raw or demux files)
 
-## Preprocessing: Approach 1 (fastp -> stacks)
+## Preprocessing: Approach 1 (fastp -> stacks, no 5' trim but attempted cut site recovery)
 ### Filter Illumina adapters and fix bases in read overlap with [fastp](https://github.com/OpenGene/fastp)
 * See `./davidsonii_F2_ddRAD/scripts/preprocessing/`
 * Illumina adapter trimming enabled by default
@@ -86,9 +86,13 @@ do
     process_radtags --paired -1 $r1in -2 $r2in -i gzfastq -o $outfilepath --renz_1 'ecoRI' --renz_2 'mspI' -c -q -r -w 0.15 -s 10 --len_limit 30
 done
 ```
+This leads to a very high and consistent amount of reads being discarded because the RAD cutsite was not identified. Because of this, try a second approach, which trims the 5' ends of reads so that the issue of unidentifiability of the cut site can be avoided.
 
-Interesting... there is a very high and very consistent amount of RAD cutsites not found (~80) for each sample.
-Is there something I'm not understanding here?
+
+## Preprocessing: Approach 2 (fastp -> stacks, trimming 5' ends)
+
+
+
 
 
 ### *ipyrad* testing... (includes strict filter for Illumina adapter)
