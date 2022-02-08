@@ -4,7 +4,7 @@
 * data demultiplexed by Kate Ostevik using Sabre script (should link that here)
 * Two parent individuals (DNT and PP) appear to have proper RE overhang, with an additional 'C' base at the beginning. This pattern is not apparent in the F2 data (either raw or demux files)
 
-## Preprocessing: Approach 1 (fastp -> stacks, no 5' trim but attempted cut site recovery)
+## Preprocessing: Approach 1 (fastp -> stacks, no trimming, attempting cut site recovery)
 ### Filter Illumina adapters and fix bases in read overlap with [fastp](https://github.com/OpenGene/fastp)
 * See `./davidsonii_F2_ddRAD/scripts/preprocessing/`
 * Illumina adapter trimming enabled by default
@@ -133,7 +133,7 @@ do
 done
 ```
 
-### Stacks script
+### Stacks script (filter for phred in sliding window = 20; main difference)
 * list the parameters here in bullet points
 
 ```
@@ -162,12 +162,6 @@ do
 done
 ```
 
+## Now moving on to alignment with BWA
 
-
-
-
-### *ipyrad* testing... (includes strict filter for Illumina adapter)
-#### referenced assembly, no RE recovery, no trimming:
-#### referenced assembly, no RE recovery, trim first 5 bp of R1:
-#### referenced assembly, no RE recovery, trim first 5 bp R1, first 3 bp R2:
 
