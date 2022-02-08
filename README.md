@@ -90,6 +90,51 @@ This leads to a very high and consistent amount of reads being discarded because
 
 
 ## Preprocessing: Approach 2 (fastp -> stacks, trimming 5' ends)
+### Forward and Reverse reads both have low quality bases at the cut site. A few of the individuals have higher quality reads here (taken from different pools -- parents DNT006 and PP56). Here it is clear that the cut site is present, though there is an extra base ('C') on the 5' end of forward reads (the reverse reads are unaffected). This is likely an artifact of the demultiplexing step. To remedy this, trim the first 6 bp of forward reads for all reads (corresponding to restriction overhang for EcoRI 'AATTC' + the additional 'C' preceding this) and the first 3 bp of the reverse reads in fastp. All parameters used in fastp:
+* Illumina adapter trimming enabled by default
+* Disable quality filtering
+    - -Q
+* Enable base correction in overlapped regions
+    - -c (minimum 30 bp overlap = default)
+* 16 threads
+    - -w 16
+* Evaluate duplication rate and remove duplicated reads
+    - -D (default duplication calculation accuracy = 3)
+* Trim first 6 bp of forward reads
+    - --trim_front1 6
+* Trim first 3 bp of reverse reads
+    - --trim_front2 3
+
+```
+#!/bin/sh
+
+#SBATCH -N 1
+#SBATCH -n 16
+#SBATCH -p wessinger-48core
+#SBATCH --job-name=testrun_fastp
+
+cd $SLURM_SUBMIT_DIR
+
+
+#path to fastp
+fastpdir="/work/bs66/software"
+
+#path to demultiplexed files
+demuxdir="/work/bs66/davidsonii_mapping/demuxed"
+
+
+#fastp for loop
+for r1in in $demuxdir/*.F.fq.gz; 
+do
+    r2in="${r1in/F.fq.gz/R.fq.gz}"
+    r1out="${r1in##*/}"
+    r2out="${r1out/F.fq.gz/R.fq.gz}"
+    $fastpdir/./fastp -i "$r1in" -I "$r2in" -o "${r1out/.F./_R1.}" -O "${r2out/.R./_R2.}" -Q -c -w 16 -D --trim_front1 6 --trim_front2 3 -h "${r1out/F.fq.gz/html}" -j "${r1out/F.fq.gz/json}"
+done
+```
+
+For the stacks script, I think the "TEMP" new script on desktop should actually be good to go.
+Check for correct file output and etc. but I don't think it should include anything else/different.
 
 
 
