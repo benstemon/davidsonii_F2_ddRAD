@@ -12,7 +12,7 @@
 
 * Forward and Reverse reads both have low quality bases at the cut site. This is likely due to low base diversity. Because all reads have the same bases at the cut site, the sequencer has trouble reliably determining the bases.
 * A few of the individuals DO have higher quality reads here (taken from different pools -- parents DNT006 and PP56). Here it is clear that the cut site is present, though there is an extra base ('C') on the 5' end of forward reads (the reverse reads are unaffected). I'm not sure why this happens, but it may be an artifact of the demultiplexing step, or maybe an issue with barcode ligation. To remedy this, trim the first 6 bp of forward reads for all reads (corresponding to restriction overhang for EcoRI 'AATTC' + the additional 'C' preceding this) and the first 3 bp of the reverse reads in fastp. All parameters used in fastp:
-* Script available at `/davidsonii_F2_ddRAD/scripts/preprocessing/run_fastp_v2.sh'
+* Script available at `/davidsonii_F2_ddRAD/scripts/preprocessing/run_fastp_v2.sh`
 * Illumina adapter trimming enabled by default
 * PolyG tail trimming enabled by default
 * Disable quality filtering
@@ -59,7 +59,7 @@ done
 ### Use process_radtags in stacks to filter low quality reads with sliding window approach
 (Note that we will retain stacks in this pipeline because I like the sliding window approach to process_radtags better than the quality filtering options available in fastp.)
 
-* Script available at `/davidsonii_F2_ddRAD/scripts/preprocessing/run_stacks_v2.sh'
+* Script available at `/davidsonii_F2_ddRAD/scripts/preprocessing/run_stacks_v2.sh`
 * Clean data, removing any read with an uncalled base
     - -c
 * Discard reads with low quality scores
