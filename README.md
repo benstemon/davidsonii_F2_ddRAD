@@ -90,7 +90,9 @@ This leads to a very high and consistent amount of reads being discarded because
 
 
 ## Preprocessing: Approach 2 (fastp -> stacks, trimming 5' ends)
-### Forward and Reverse reads both have low quality bases at the cut site. A few of the individuals have higher quality reads here (taken from different pools -- parents DNT006 and PP56). Here it is clear that the cut site is present, though there is an extra base ('C') on the 5' end of forward reads (the reverse reads are unaffected). This is likely an artifact of the demultiplexing step. To remedy this, trim the first 6 bp of forward reads for all reads (corresponding to restriction overhang for EcoRI 'AATTC' + the additional 'C' preceding this) and the first 3 bp of the reverse reads in fastp. All parameters used in fastp:
+### Global trimming with fastp (+ deduplication and bas correction in overlapped regions)
+(Note that we still retain stacks in this pipeline because I like the sliding window approach to process_radtags better than the quality filtering options available in fastp.)
+* Forward and Reverse reads both have low quality bases at the cut site. A few of the individuals have higher quality reads here (taken from different pools -- parents DNT006 and PP56). Here it is clear that the cut site is present, though there is an extra base ('C') on the 5' end of forward reads (the reverse reads are unaffected). This is likely an artifact of the demultiplexing step. To remedy this, trim the first 6 bp of forward reads for all reads (corresponding to restriction overhang for EcoRI 'AATTC' + the additional 'C' preceding this) and the first 3 bp of the reverse reads in fastp. All parameters used in fastp:
 * Illumina adapter trimming enabled by default
 * Disable quality filtering
     - -Q
