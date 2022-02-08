@@ -19,5 +19,5 @@ outfilepath="/work/bs66/davidsonii_mapping/preprocessing_v2/stacks_output"
 for r1in in $infilepath/*R1.fq.gz;
 do
     r2in="${r1in/_R1./_R2.}"
-    process_radtags --paired -1 $r1in -2 $r2in -i gzfastq -o $outfilepath -c -q -w 0.15 -s 10 --len_limit 30
+    process_radtags --paired -1 $r1in -2 $r2in -i gzfastq -o $outfilepath -c -q -w 0.15 -s 20 --len_limit 30 --disable_rad_check
 done
