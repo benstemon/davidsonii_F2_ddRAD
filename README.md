@@ -2,7 +2,6 @@
 
 ## Working directly from pre-demuxed data
 * data demultiplexed by Kate Ostevik using Sabre script (should link that here)
-* Two parent individuals (DNT and PP) appear to have proper RE overhang, with an additional 'C' base at the beginning. This pattern is not apparent in the F2 data (either raw or demux files)
 
 ## Preprocessing: Approach 1 (fastp -> stacks, no trimming, attempting cut site recovery)
 ### Filter Illumina adapters and fix bases in read overlap with [fastp](https://github.com/OpenGene/fastp)
