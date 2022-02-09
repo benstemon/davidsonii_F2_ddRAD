@@ -8,7 +8,7 @@
 ## Preprocessing: Approach 2 (fastp -> stacks, trimming 5' ends)
 
 
-### Filter Illumina adapters, fix bases in read overlap, polyG trim, deduplication, and trim restriction overhang with [fastp](https://github.com/OpenGene/fastp)
+### Filter Illumina adapters, fix bases in read overlap, polyG trim, and trim restriction overhang with [fastp](https://github.com/OpenGene/fastp)
 
 * Forward and Reverse reads both have low quality bases at the cut site. This is likely due to low base diversity. Because all reads have the same bases at the cut site, the sequencer has trouble reliably determining the bases.
 * A few of the individuals DO have higher quality reads here (taken from different pools -- parents DNT006 and PP56). Here it is clear that the cut site is present, though there is an extra base ('C') on the 5' end of forward reads (the reverse reads are unaffected). I'm not sure why this happens, but it may be an artifact of the demultiplexing step, or maybe an issue with barcode ligation. To remedy this, trim the first 6 bp of forward reads for all reads (corresponding to restriction overhang for EcoRI 'AATTC' + the additional 'C' preceding this) and the first 3 bp of the reverse reads in fastp. All parameters used in fastp:
@@ -21,8 +21,8 @@
     - -c (minimum 30 bp overlap = default)
 * 16 threads
     - -w 16
-* Evaluate duplication rate and remove duplicated reads
-    - -D (default duplication calculation accuracy = 3)
+* Do not perform deduplication; no need for duplication rate estimation
+    - --dont_eval_duplication
 * Trim first 6 bp of forward reads
     - --trim_front1 6
 * Trim first 3 bp of reverse reads
@@ -57,9 +57,14 @@ done
 ```
 
 ### Use process_radtags in stacks to filter low quality reads with sliding window approach
-(Note that we will retain stacks in this pipeline because I like the sliding window approach to process_radtags better than the quality filtering options available in fastp.)
 
-* Script available at `/davidsonii_F2_ddRAD/scripts/preprocessing/run_stacks_v2.sh`
+* Note that we will retain stacks in this pipeline because I like the sliding window approach to process_radtags better than the quality filtering options available in fastp.
+* Requires three files:
+    - To generate job script headings, [base_script.sh](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/base_script.sh)
+    - To create job scripts, [create_stacks_jobscripts.sh](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/create_stacks_jobscripts.sh)
+    - To submit jobs, [run_stacks_v2.sh](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/run_stacks_v3.sh)
+
+This pipeline uses stacks to do the following:
 * Clean data, removing any read with an uncalled base
     - -c
 * Discard reads with low quality scores
@@ -71,31 +76,11 @@ done
 * Drop reads less than 30 bp
     - --len_limit 30
 
+Basic stacks syntax is as follows:
 ```
-#!/bin/sh
-
-#SBATCH -N 1
-#SBATCH -n 10 
-#SBATCH -p wessinger-48core
-#SBATCH --job-name=testrun_stacks
-
-
-cd $SLURM_SUBMIT_DIR
-
-
-module load stacks/gcc/2.41
-
-
-infilepath="/work/bs66/davidsonii_mapping/preprocessing_v2/fastp_outfiles"
-outfilepath="/work/bs66/davidsonii_mapping/preprocessing_v2/stacks_output"
-
-
-for r1in in $infilepath/*R1.fq.gz;
-do
-    r2in="${r1in/_R1./_R2.}"
-    process_radtags --paired -1 $r1in -2 $r2in -i gzfastq -o $outfilepath -c -q -w 0.15 -s 20 --len_limit 30 --disable_rad_check
-done
+process_radtags --paired -1 $forward_read -2 $reverse_read -i gzfastq -o $out_dir -c -q -w 0.15 -s 20 --len_limit 30 --disable_rad_check
 ```
 
 ## Now moving on to alignment with BWA
+
 
