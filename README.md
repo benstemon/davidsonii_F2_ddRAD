@@ -28,7 +28,7 @@
 * Trim first 3 bp of reverse reads
     - --trim_front2 3
 
-```
+```shell
 #!/bin/sh
 
 #SBATCH -N 1
@@ -60,9 +60,9 @@ done
 
 * Note that we will retain stacks in this pipeline because I like the sliding window approach to process_radtags better than the quality filtering options available in fastp.
 * Requires three files:
-    - To generate job script headings, [base_script.sh](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/base_script.sh)
-    - To create job scripts, [create_stacks_jobscripts.sh](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/create_stacks_jobscripts.sh)
-    - To submit jobs, [run_stacks_v2.sh](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/run_stacks_v3.sh)
+    1. To generate job script headings, [`base_script.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/base_script.sh)
+    2. To create job scripts, [`create_stacks_jobscripts.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/create_stacks_jobscripts.sh)
+    3. To submit jobs, [`run_stacks_v2.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/run_stacks_v3.sh)
 
 This pipeline uses stacks to do the following:
 * Clean data, removing any read with an uncalled base
@@ -81,6 +81,60 @@ Basic stacks syntax is as follows:
 process_radtags --paired -1 $forward_read -2 $reverse_read -i gzfastq -o $out_dir -c -q -w 0.15 -s 20 --len_limit 30 --disable_rad_check
 ```
 
-## Now moving on to alignment with BWA
+## Map with bwa
+* Prior to mapping, the genome must be indexed. Perform indexing with:
+```
+bwa index davidsonii_genome.fasta
+```
+* The mapping process will require three separate files
+    1. To generate job script headings: [`mapping_header.txt`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/mapping_header.txt)
+    2. To create job scripts: [`create_mapping_jobscript.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/create_mapping_jobscript.sh)
+    3. To submit jobs: [`masterscript_mapping.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/masterscript_mapping.sh)
+
+### Jobscript creation and main pipeline
+1. Local alignment in bwa
+2. Convert .sam file from alignment to .bam file with samtools
+3. Sort the .bam file with samtools
+4. Assign reads to read groups with picard
+5. Index final .bam file with samtools
+
+```shell
+#full permanent paths for important files
+genomefile="/work/bs66/davidsonii_mapping/davidsonii_genome.fasta"
+headerfile="/work/bs66/davidsonii_mapping/mapping/mapping_header.txt"
+
+#full permanent paths for important directories
+infilepath="/work/bs66/davidsonii_mapping/preprocessing_v3/stacks_output"
+jobscriptpath="/work/bs66/davidsonii_mapping/mapping/log_outfiles"
+bamfilepath="/work/bs66/davidsonii_mapping/mapping/bamfiles"
+rgpath="/work/bs66/davidsonii_mapping/mapping/RG"
+
+#path to picard .jar file
+picardpath="/share/apps/gcc/4.8.5/picard2018/picard.jar"
 
 
+#main loop to create jobscripts
+for r1in in $infilepath/*R1.1.fq.gz;
+do
+    #naming variables
+    r2in="${r1in/R1.1/R2.2}"
+    r1qz="${r1in##*/}"
+    readhead="${r1qz/_R1.1.fq.gz/}"
+    
+    #copy header file to jobscript
+    cat $headerfile > $jobscriptpath/mapping_$readhead.sh
+    
+    #write bwa command to jobscript (output = .sam file)
+    echo "bwa mem $genomefile $r1in $r2in > $bamfilepath/$readhead.sam" >> $jobscriptpath/mapping_$readhead.sh
+    
+    #write samtools commands to jobscript (.sam -> unsorted.bam -> .bam)
+    echo "samtools view -bS $bamfilepath/$readhead.sam > $bamfilepath/$readhead.unsorted.bam" >> $jobscriptpath/mapping_$readhead.sh
+    echo "samtools sort $bamfilepath/$readhead.unsorted.bam > $bamfilepath/$readhead.bam" >> $jobscriptpath/mapping_$readhead.sh
+    
+    #write picard command to jobscript (Add or Replace Read Groups)
+    echo "java -jar $picardpath AddOrReplaceReadGroups I=$bamfilepath/$readhead.bam O=$rgpath/$readhead.bam SO=coordinate RGID=SeqRUN# RGLB=$bamfilepath/$readhead.bam RGPL=illumina RGPU=$bamfilepath/$readhead.bam RGSM=$bamfilepath/$readhead.bam VALIDATION_STRINGENCY=LENIENT" >> $jobscriptpath/mapping_$readhead.sh
+    
+    #write final samtools command to jobscript (creates index file)
+    echo "samtools index $rgpath/$readhead.bam $rgpath/$readhead.bai" >> $jobscriptpath/mapping_$readhead.sh
+done
+```
