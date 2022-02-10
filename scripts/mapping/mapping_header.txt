@@ -1,0 +1,14 @@
+#!/bin/sh
+
+#SBATCH -N 1
+#SBATCH -n 1 
+#SBATCH -p wessinger-48core
+#SBATCH --job-name=mapping
+#SBATCH --output=/work/bs66/davidsonii_mapping/mapping/log_outfiles/slurm-%j.out
+
+cd $SLURM_SUBMIT_DIR
+
+module load bwa
+module load samtools
+module load picard
+
