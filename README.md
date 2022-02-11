@@ -138,3 +138,32 @@ do
     echo "samtools index $rgpath/$readhead.bam $rgpath/$readhead.bai" >> $jobscriptpath/mapping_$readhead.sh
 done
 ```
+
+## Call variants with GATK HaplotypeCaller and genotype with GenotypeGVCFs
+HaplotypeCaller calls SNPs and indels simultaneously through local *de novo* assembly of haplotypes. It generates an intermediate GVCF which can then be used in GenotypeGVCFs (GVCF workflow) for sample genotyping. It works by defining active regions, determining haplotypes by assembling the active region, determining likelihoods of the haplotypes given read data, and then assigning sample genotypes using genotype likelihoods.
+
+
+### Reference genome formatting
+* Before calling variants, need to create a dictionary (reference.dict) file...
+`gatk CreateSequenceDictionary -R davidsonii_genome.fasta`
+
+* ... as well as an index file (reference.fai) for the reference genome:
+`samtools faidx davidsonii_genome.fasta`
+
+### Variant Calling
+**Here is where I am currently. Write a script to generate jobscripts for HaplotypeCaller**
+
+gatk HaplotypeCaller -R genome.fasta -I input.bam -O output.g.vcf.gz --emitRefConfidence GVCF
+
+
+### Joint Genotyping
+gatk GenotypeGVCFs
+
+### Variant Recalibration
+gatk VQSR on the vcfs
+
+
+
+
+
+
