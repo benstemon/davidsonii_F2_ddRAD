@@ -163,6 +163,7 @@ gatk --java-options '-Xmx4g' HaplotypeCaller -R davidsonii_genome.fasta -I PopF2
 ```
 
 ### Combine output into multi-sample GVCF with CombineGVCFs
+* See [`combine_gvcf.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/combine_gvcf.sh)
 Basic syntax: 
 ```
 gatk --java-options '-Xmx4g' CombineGVCFs -R davidsonii_genome.fasta\
