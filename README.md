@@ -152,26 +152,37 @@ HaplotypeCaller calls SNPs and indels simultaneously through local *de novo* ass
 
 ### Variant Calling
 * need three files
-1. haplotype_header.txt
-2. create_haplotype_caller_jobscript.sh
-3. masterscript_haplotype_caller.sh
+1. [`haplotype_header.txt`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/haplotype_header.txt)
+2. [`create_haplotype_caller_jobscript.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/create_haplotype_caller_jobscript.sh)
+3. [`masterscript_haplotype_caller.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/masterscript_haplotype_caller.sh)
 
-`bash create_haplotype_caller_jobscript.sh`
-`bash masterscript_haplotype_caller.sh`
+Basic syntax of a jobscript is as follows:
 
-gatk HaplotypeCaller -R genome.fasta -I input.bam -O output.g.vcf.gz --emitRefConfidence GVCF
+```shell
+gatk --java-options '-Xmx4g' HaplotypeCaller -R davidsonii_genome.fasta -I PopF2_01.bam -O PopF2_01.g.vcf.gz -ERC GVCF
+```
 
-
-these two can go together.
 ### Combine output into multi-sample GVCF with CombineGVCFs
+Basic syntax: 
+```
+gatk --java-options '-Xmx4g' CombineGVCFs -R davidsonii_genome.fasta\
+ --variant PopF2_01.g.vcf.gz\
+ --variant PopF2_02.g.vcf.gz\
+ --variant ...\
+ -O cohort_F2s.g.vcf.gz
+```
+
 ### Joint Genotyping
-gatk GenotypeGVCFs
+gatk GenotypeGVCFs 
 
 ### Variant Recalibration
 gatk VQSR on the vcfs
 
 
 
-
+Something to consider for attempting parallelization
+```
+--native-pair-hmm-threads 2 
+```
 
 
