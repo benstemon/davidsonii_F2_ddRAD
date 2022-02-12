@@ -151,7 +151,13 @@ HaplotypeCaller calls SNPs and indels simultaneously through local *de novo* ass
 `samtools faidx davidsonii_genome.fasta`
 
 ### Variant Calling
-**Here is where I am currently. Write a script to generate jobscripts for HaplotypeCaller**
+* need three files
+1. haplotype_header.txt
+2. create_haplotype_caller_jobscript.sh
+3. masterscript_haplotype_caller.sh
+
+`bash create_haplotype_caller_jobscript.sh`
+`bash masterscript_haplotype_caller.sh`
 
 gatk HaplotypeCaller -R genome.fasta -I input.bam -O output.g.vcf.gz --emitRefConfidence GVCF
 
