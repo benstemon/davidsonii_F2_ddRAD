@@ -1,0 +1,13 @@
+#!/bin/sh
+
+#SBATCH -N 1
+#SBATCH -n 1 
+#SBATCH -p wessinger-48core
+#SBATCH --job-name=haplo_caller
+#SBATCH --output=/work/bs66/davidsonii_mapping/mapping/log_outfiles/slurm-%j.out
+
+cd $SLURM_SUBMIT_DIR
+
+module load GATK/4.1.3.0
+module load java
+
