@@ -156,6 +156,8 @@ HaplotypeCaller calls SNPs and indels simultaneously through local *de novo* ass
 gatk HaplotypeCaller -R genome.fasta -I input.bam -O output.g.vcf.gz --emitRefConfidence GVCF
 
 
+these two can go together.
+### Combine output into multi-sample GVCF with CombineGVCFs
 ### Joint Genotyping
 gatk GenotypeGVCFs
 
