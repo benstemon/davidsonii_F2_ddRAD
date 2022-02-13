@@ -174,16 +174,39 @@ gatk --java-options '-Xmx4g' CombineGVCFs -R davidsonii_genome.fasta\
 ```
 
 ### Joint Genotyping
-gatk GenotypeGVCFs 
+* See [`joint_genotyping.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/joint_genotyping.sh)
+```shell
+#!/bin/sh
 
-### Variant Recalibration
-gatk VQSR on the vcfs
+#SBATCH -N 1
+#SBATCH -n 1 
+#SBATCH -p wessinger-48core
+#SBATCH --job-name=genotyping
+#SBATCH --output=/work/bs66/davidsonii_mapping/mapping/log_outfiles/slurm-%j.out
+
+cd $SLURM_SUBMIT_DIR
+
+module load GATK/4.1.3.0
+module load java
+
+#important files and directories
+genomefile="/work/bs66/davidsonii_mapping/davidsonii_genome.fasta"
+vcffile="/work/bs66/davidsonii_mapping/mapping/genotyping/cohort_F2s.g.vcf.gz"
+outdir="/work/bs66/davidsonii_mapping/mapping/genotyping"
 
 
+gatk --java-options "-Xmx4g" GenotypeGVCFs -R $genomefile -V $vcffile -O $outdir/genotyped_cohort.vcf.gz
+```
 
-Something to consider for attempting parallelization
+## Filter for biallelic SNPs with MQ > 30 and that represent fixed differences between the two parent species
+
+
+### Notes
+* Something to consider for attempting parallelization.
 ```
 --native-pair-hmm-threads 2 
 ```
+* Could consider joining the GVCF merging step and the genotyping step.
 
+* Consider Variant recalibration (gatk VQSR) on the joint gvcfs?
 
