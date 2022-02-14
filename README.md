@@ -145,10 +145,16 @@ HaplotypeCaller calls SNPs and indels simultaneously through local *de novo* ass
 
 ### Reference genome formatting
 * Before calling variants, need to create a dictionary (reference.dict) file...
-`gatk CreateSequenceDictionary -R davidsonii_genome.fasta`
+
+```shell
+gatk CreateSequenceDictionary -R davidsonii_genome.fasta
+```
 
 * ... as well as an index file (reference.fai) for the reference genome:
-`samtools faidx davidsonii_genome.fasta`
+
+```shell
+samtools faidx davidsonii_genome.fasta
+```
 
 ### Variant Calling
 * need three files
@@ -198,7 +204,21 @@ outdir="/work/bs66/davidsonii_mapping/mapping/genotyping"
 gatk --java-options "-Xmx4g" GenotypeGVCFs -R $genomefile -V $vcffile -O $outdir/genotyped_cohort.vcf.gz
 ```
 
-## Filter for biallelic SNPs with MQ > 30 and that represent fixed differences between the two parent species
+##VCF filtering
+### Filter for biallelic SNPs with MQ > 30 that represent fixed differences between the two parent species
+* See filterVCF.py
+* Requirements for this script:
+    - .vcf.gz file created from previous step must be unzipped (gunzip)
+    - Two parents, which are the last two individuals
+    - Editing parameters `nF2s` and `minIndiv` to match the number of F2s and desired minimum number of individuals for which to filter a SNP
+    - Editing parameters `invcf` and `outfile` accordingly
+
+
+### Extract single best SNP per RADtag (most data + highest rare allele frequency)
+* See find_best_snp.py
+
+
+
 
 
 ### Notes
