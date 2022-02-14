@@ -179,7 +179,7 @@ gatk --java-options '-Xmx4g' CombineGVCFs -R davidsonii_genome.fasta\
  -O cohort_F2s.g.vcf.gz
 ```
 
-### Joint Genotyping
+### Joint Genotyping with GenotypeGVCFs
 * See [`joint_genotyping.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/joint_genotyping.sh)
 ```shell
 #!/bin/sh
