@@ -204,18 +204,244 @@ outdir="/work/bs66/davidsonii_mapping/mapping/genotyping"
 gatk --java-options "-Xmx4g" GenotypeGVCFs -R $genomefile -V $vcffile -O $outdir/genotyped_cohort.vcf.gz
 ```
 
-##VCF filtering
+## VCF filtering
 ### Filter for biallelic SNPs with MQ > 30 that represent fixed differences between the two parent species
-* See filterVCF.py
-* Requirements for this script:
+* See [`1.filterVCF_v2.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/1.filterVCF_v2.py)
+* Requirements:
     - .vcf.gz file created from previous step must be unzipped (gunzip)
     - Two parents, which are the last two individuals
-    - Editing parameters `nF2s` and `minIndiv` to match the number of F2s and desired minimum number of individuals for which to filter a SNP
-    - Editing parameters `invcf` and `outfile` accordingly
+* In-file parameters (requires editing script):
+    - `nF2s` = number of F2s in .vcf
+    - `minIndiv` = desired minimum number of individuals for which to filter a SNP
+    - Specify infile and outfile parameters
+
+```python
+# -*- coding: utf-8 -*-
+
+"""
+Created on Wed Dec 20 18:04:58 2017
+
+@author: carrie
+
+this assumes the final two samples in the vcf are the parents.
+"""
+
+# modified by BWS 2/15/22
+# Now disallows multi-bp variants in both ref and alt alleles
+# Now disallows missing data in either parent
+# Now includes parsing for phased genotypes
+
+invcf = open('genotyped_cohort.vcf', 'rU')
+outfile = open('filtered_cohort.vcf', 'w')
+
+nF2s = 83
+minIndiv = 50
+nsamples = nF2s + 2
+minMQ = 30
+
+def skipHeader(line):
+    cols = line.replace('\n','').split('\t')
+    if len(cols) < 2:
+        return 'header'
+    elif cols[0] == '#CHROM':
+        return 'header'
+    else:
+	return cols
+
+def extractVCFfields(sampleData):
+    """ Extract data from sample-level fields in VCF file """
+    if sampleData != './.':
+        fields = sampleData.split(':')
+        if (len(fields) > 4):
+            alleleDepths = fields[1].split(',')
+            totDepth = fields[2]
+            phreds = fields[4].split(',')
+            return [totDepth, alleleDepths, phreds]
+        else:
+            return 'missing'
+    else:
+        return 'missing'
+
+def findMapQual(infoField):
+    info = infoField.split(';')
+    listpos = len(info) - 1
+    MQscore = 0
+
+    while listpos > 0: # start searching for MQ from end of info field
+        if (info[listpos].split('='))[0] == 'MQ': # found it!
+            MQscore = float((info[listpos].split('='))[1])
+            listpos = 0
+        else:
+            listpos -= 1 # keep searching
+    return MQscore
+###################################################################
+
+for line in invcf:
+    cols = skipHeader(line)
+    if cols != 'header':
+        MQscore = findMapQual(cols[7])
+        #if MQ score beats threshold, collect reference and alternative call
+        if MQscore >= minMQ:
+            altBase = cols[4]
+            refBase = cols[3]
+            #if either the reference or alt call is > 1bp, do nothing
+            if len(altBase) > 1 or len(refBase) > 1:
+                pass
+                
+            else:
+                calls = 0
+                for j in range(9, 9+nsamples):
+                    annot = extractVCFfields(cols[j])
+                    if annot != 'missing':
+                        calls += 1
+                p1 = cols[nsamples-2 + 9]
+                p2 = cols[nsamples-1 + 9]
+                
+                #updated code for missing and phased data:
+                p1fields = p1.split(':')[0]
+                p2fields = p2.split(':')[0]
+                if any(x in p1fields for x in ('./.', '0/1', '0|1', p2fields)):
+                    pass
+                elif any(x in p2fields for x in ('./.', '0/1', '0|1')):
+                    pass
+                elif p1fields == '0|0' and p2fields == '0/0':
+                    pass
+                elif p1fields == '0/0' and p2fields == '0|0':
+                    pass
+                elif p1fields == '1|1' and p2fields == '1/1':
+                    pass
+                elif p1fields == '1/1' and p2fields == '1|1':
+                    pass
+                else:
+                    if calls >= minIndiv:
+                        outfile.write(line)
+
+outfile.close()
+```
+
+### Find single best SNP per RADtag (most data + highest rare allele frequency)
+* See [`2.find_best_snp_v2.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/2.find_best_snp_v2.py)
+* This script just specifies which SNPs are selected. Directly after, use `3.thin_best_snp.py` (below) to extract SNPs to new .vcf file.
+* Requirements:
+    - filtered .vcf file (output from `1.filterVCF_v2.py`)
+* In-file parameters (requires editing script):
+    - `MinMinor` = Minimum number of individuals that can have minor allele for SNP to be selected
+    - `plants` = Number of F2s + number of parents in .vcf
+    - `radtaglength` = Minimum bp distance apart that selected SNPs can be (e.g., if data are 150bp SE data, this value should be 150)
+    - Specify infile and outfile
+
+```python
+# This program thins to best snp per radtag
+# written by JKK
+
+# modified by Carrie
+# assumes you've already filtered for quality
+
+# modified by BWS 2/15/22
+# Now includes parsing for phased genotypes
+# Now includes additional parameter "radtaglength" -- minimum 
+
+#parameters to modify
+############################
+MinMinor = 8 # min individuals that will have minor allele
+
+vcf = open("filtered_cohort.vcf", "rU")
+out2a = open('best_ids_cohort.txt', 'w')
 
 
-### Extract single best SNP per RADtag (most data + highest rare allele frequency)
-* See find_best_snp.py
+plants = 83 + 2 #F2 + parents
+
+radtaglength = 300#length of longest RadTags (e.g., 300 for 150bp PE reads)
+
+############################
+
+
+#do not modify:
+last_scaff = ''
+bestsnp = ''
+lastpos = 0
+cp = 0
+
+bestlist = []
+
+for line_idx, line in enumerate(vcf):
+    cols = line.replace('\n', '').split('\t')
+    scaff = cols[0]
+    position = int(cols[1])
+    ref_base = cols[3]
+    alt_base = cols[4]
+    if line_idx % 10000 == 0:
+        print scaff, position
+
+    mincc = 0
+
+    if len(alt_base) == 1:
+        datums = [0, 0, 0]
+        for j in range(9, 9 + plants):
+            if cols[j] != "./.":
+                geno = cols[j].split(":")[0]
+                if geno == "0/0" or geno == "0|0":
+                    datums[0] += 1
+                elif geno == "0/1" or geno == "0|1":
+                    datums[1] += 1
+                elif geno == "1/1" or geno == "1|1":
+                    datums[2] += 1
+                else:
+                    print "strange genotype: ", geno
+        mincc = min(datums[0] + datums[1], datums[2] + datums[1])
+#this isn't quite finding the best SNP per radtag.
+#It's finding the best SNP and ensuring there aren't others within 150 bp (or whatever).
+#You could lose some data if cut sites are close to mapped SNPs but on different RADtags.
+#The point though is to try to avoid obviously linked SNPs (eg same RADtag) and this does.
+        if scaff != last_scaff or (position - lastpos) > radtaglength:
+            if cp >= MinMinor:
+                out2a.write(bestsnp)
+            cp = mincc
+            bestsnp = scaff + '\t' + cols[1] + '\n'
+            last_scaff = scaff
+            lastpos = position
+        elif mincc > cp and position != lastpos:
+            cp = mincc
+            bestsnp = scaff + '\t' + cols[1] + '\n'
+
+if cp >= MinMinor:
+    out2a.write(bestsnp)  # last snp
+
+out2a.close()
+```
+
+### Extract best SNP per RADtag
+* See [`3.thin_best_snp.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/3.thin_best_snp.py)
+* Requirements:
+    - filtered .vcf file (output from `1.filterVCF_v2.py`)
+    - best_ids .txt output from preceding step (`2.find_best_snp_v2.py`)
+* In-file parameteres (requires editing script):
+    - Specify best_ids .txt file, filtered .vcf file, and outfile
+
+```python
+# Code originally from Carrie Wessinger
+# Modified by BWS 2/15/22
+
+in2a = open('best_ids_cohort.txt', 'rU')#best_ids file
+vcf = open("filtered_cohort.vcf", "rU")#filtered .vcf file
+outfile = open("bestsnps_cohort.vcf", 'w')
+
+bestlist = []
+for line in in2a:
+    cols = line.replace('\n', '').split('\t')
+    bestlist.append([cols[0], cols[1]])
+
+for line in vcf:
+    cols = line.replace('\n', '').split('\t')
+    tig = cols[0]
+    pos = cols[1]
+    for x in bestlist:
+        if tig == x[0] and pos == x[1]:
+            outfile.write(line)
+
+outfile.close()
+```
+
 
 
 
