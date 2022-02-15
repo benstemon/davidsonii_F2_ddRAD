@@ -6,6 +6,7 @@
 
 
 ## Preprocessing: Approach 2 (fastp -> stacks, trimming 5' ends)
+* Note: approach 1 (no trimming) failed, due to issues with enzyme cut sites (see below).
 
 
 ### Filter Illumina adapters, fix bases in read overlap, polyG trim, and trim restriction overhang with [fastp](https://github.com/OpenGene/fastp)
