@@ -6,6 +6,7 @@
 
 # modified by BWS 2/15/22
 # Now includes parsing for phased genotypes
+# Now includes additional parameter "radtaglength" -- minimum 
 
 #parameters to modify
 ############################
@@ -41,7 +42,7 @@ for line_idx, line in enumerate(vcf):
 
     mincc = 0
 
-    if len(alt_base) == 1:  # print "why are there multiple bases here?"
+    if len(alt_base) == 1:
         datums = [0, 0, 0]
         for j in range(9, 9 + plants):
             if cols[j] != "./.":
@@ -53,7 +54,7 @@ for line_idx, line in enumerate(vcf):
                 elif geno == "1/1" or geno == "1|1":
                     datums[2] += 1
                 else:
-                    print "wtf2 ", geno
+                    print "strange genotype: ", geno
         mincc = min(datums[0] + datums[1], datums[2] + datums[1])
 #this isn't quite finding the best SNP per radtag.
 #It's finding the best SNP and ensuring there aren't others within 150 bp (or whatever).
