@@ -64,7 +64,9 @@ done
 * Note that we will retain stacks in this pipeline because I like the sliding window approach to process_radtags better than the quality filtering options available in fastp.
 * Requires three files:
     1. To generate job script headings, [`base_script.txt`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/base_script.txt)
+        - Edit headings as necessary for computing cluster
     2. To create job scripts, [`create_stacks_jobscripts.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/create_stacks_jobscripts.sh)
+        - Edit parameters in-text as necessary for your environment
     3. To submit jobs, [`run_stacks_v2.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/preprocessing/run_stacks_v3.sh)
 
 This pipeline uses stacks to do the following:
@@ -79,6 +81,8 @@ This pipeline uses stacks to do the following:
 * Drop reads less than 30 bp
     - --len_limit 30
 
+**After editing parameters as needed, just: `bash create_stacks_jobscripts.sh` and `bash run_stacks_v2.sh` (submits jobscripts)**
+
 Basic stacks syntax is as follows:
 ```
 process_radtags --paired -1 $forward_read -2 $reverse_read -i gzfastq -o $out_dir -c -q -w 0.15 -s 20 --len_limit 30 --disable_rad_check
@@ -91,7 +95,9 @@ bwa index davidsonii_genome.fasta
 ```
 * The mapping process will require three separate files
     1. To generate job script headings: [`mapping_header.txt`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/mapping_header.txt)
+        - Edit headings as necessary for computing cluster
     2. To create job scripts: [`create_mapping_jobscript.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/create_mapping_jobscript.sh)
+        - Edit parameters as necessary for your environment
     3. To submit jobs: [`masterscript_mapping.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/masterscript_mapping.sh)
 
 ### Jobscript creation and main pipeline
@@ -142,6 +148,8 @@ do
 done
 ```
 
+**After editing parameters as needed, just: `bash create_mapping_jobscript.sh` and `bash masterscript_mapping.sh` (submits jobscripts)**
+
 ## Call variants with GATK HaplotypeCaller and genotype with GenotypeGVCFs
 HaplotypeCaller calls SNPs and indels simultaneously through local *de novo* assembly of haplotypes. It generates an intermediate GVCF which can then be used in GenotypeGVCFs (GVCF workflow) for sample genotyping. It works by defining active regions, determining haplotypes by assembling the active region, determining likelihoods of the haplotypes given read data, and then assigning sample genotypes using genotype likelihoods.
 
@@ -170,6 +178,8 @@ Basic syntax of a jobscript is as follows:
 ```shell
 gatk --java-options '-Xmx4g' HaplotypeCaller -R davidsonii_genome.fasta -I PopF2_01.bam -O PopF2_01.g.vcf.gz -ERC GVCF
 ```
+
+**After editing necessary parameters in these files, just: `bash create_haplotpe_caller_jobscript.sh` and `bash masterscript_haplotype_caller.sh` (submits jobs)**
 
 ### Combine output into multi-sample GVCF with CombineGVCFs
 * See [`combine_gvcf.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/mapping/combine_gvcf.sh)
