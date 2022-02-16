@@ -455,6 +455,39 @@ for line in vcf:
 outfile.close()
 ```
 
+### Use vcftools to calculate heterozygosity and inbreeding coefficients per individual, and other summary statistics
+* Note that prior to this step I pasted the .vcf heading back onto the filtered output so vcftools would be able to recognize the file
+* See [`generate_vcf_sumstats.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/tree/main/scripts/vcf_filtering)
+```shell
+#these calculations are very quick and do not require jobs to be sumbitted
+#can be performed easily on interactive node
+
+module load vcftools/0.1.17
+
+vcffile='/work/bs66/davidsonii_mapping/vcf_filtering/bestsnps_cohort_addheader.vcf'
+outfile='/work/bs66/davidsonii_mapping/vcf_filtering/vcftools_outfiles/out_vcf'
+
+#calculate allele frequency distributions
+vcftools --vcf $vcffile --freq2 --out $outfile
+
+#mean depth/individual
+vcftools --vcf $vcffile --depth --out $outfile
+
+#mean depth/site
+vcftools --vcf $vcffile --site-mean-depth --out $outfile
+
+#site quality
+vcftools --vcf $vcffile --site-quality --out $outfile
+
+#proportion missing data/individual
+vcftools --vcf $vcffile --missing-indv --out $outfile
+
+#proportion missing data/site
+vcftools --vcf $vcffile --missing-site --out $outfile
+
+#heterozygosity and inbreeding coefficient per individual
+vcftools --vcf $vcffile --het --out $outfile
+```
 
 
 
