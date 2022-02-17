@@ -217,6 +217,7 @@ outdir="/work/bs66/davidsonii_mapping/mapping/genotyping"
 gatk --java-options "-Xmx4g" GenotypeGVCFs -R $genomefile -V $vcffile -O $outdir/genotyped_cohort.vcf.gz
 ```
 
+
 ## VCF filtering
 ### Filter for biallelic SNPs with MQ > 30 that represent fixed differences between the two parent species
 * See [`1.filterVCF_v3.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/1.filterVCF_v3.py)
@@ -457,9 +458,11 @@ for line in vcf:
 outfile.close()
 ```
 
-### Use vcftools to calculate heterozygosity and inbreeding coefficients per individual, and other summary statistics
-* Note that prior to this step I pasted the .vcf heading back onto the filtered output so vcftools would be able to recognize the file
-* See [`generate_vcf_sumstats.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/tree/main/scripts/vcf_filtering)
+### Use vcftools to filter reads by genotype quality (GQ) and read depth (DP)
+* See [`4.filterby_gq_dp.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/4.filterby_gq_dp.sh)
+This script uses vcftools to do the following:
+    - change genotypes with genotype quality (GQ) < 20 and/or filtered depth (DP) < 2 to missing (./.)
+
 ```shell
 #these calculations are very quick and do not require jobs to be sumbitted
 #can be performed easily on interactive node
@@ -467,7 +470,26 @@ outfile.close()
 module load vcftools/0.1.17
 
 vcffile='/work/bs66/davidsonii_mapping/vcf_filtering/bestsnps_cohort_addheader.vcf'
-outfile='/work/bs66/davidsonii_mapping/vcf_filtering/vcftools_outfiles/out_vcf'
+outfile='/work/bs66/davidsonii_mapping/vcf_filtering'
+
+#filter low GQ and DP genotypes 
+vcftools --vcf $vcffile --minGQ 20 --minDP 2 --recode --recode-INFO-all --out $outfile/finalized_snps
+```
+
+
+### Use vcftools to calculate heterozygosity and inbreeding coefficients per individual, and other summary statistics
+* Note that prior to this step I pasted the .vcf heading back onto the filtered output so vcftools would be able to recognize the file
+* See [`5.generate_vcf_sumstats.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/5.generate_vcf_sumstats.sh)
+
+
+```shell
+#these calculations are very quick and do not require jobs to be sumbitted
+#can be performed easily on interactive node
+
+module load vcftools/0.1.17
+
+vcffile='/work/bs66/davidsonii_mapping/vcf_filtering/finalized_snps.recode.vcf'
+outfile='/work/bs66/davidsonii_mapping/vcf_filtering/summary_outfiles/out_vcf'
 
 #calculate allele frequency distributions
 vcftools --vcf $vcffile --freq2 --out $outfile
@@ -489,8 +511,16 @@ vcftools --vcf $vcffile --missing-site --out $outfile
 
 #heterozygosity and inbreeding coefficient per individual
 vcftools --vcf $vcffile --het --out $outfile
+
 ```
 
+* Also interested in QD score (quality score normalized by read depth -- avoids inflation caused by deep coverage) and GQ score (genotype quality score -- 
+* See [`grab_QD_score.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/grab_QD_score.sh)
+```shell
+egrep -v "^#" finalized_snps.recode.vcf | \
+cut -f 8 | \
+sed 's/^.*;QD=\([0-9]*.[0-9]*\);.*$/\1/' > summary_outfiles/QD.txt
+```
 
 
 
