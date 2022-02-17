@@ -7,4 +7,4 @@ vcffile='/work/bs66/davidsonii_mapping/vcf_filtering/bestsnps_cohort_addheader.v
 outfile='/work/bs66/davidsonii_mapping/vcf_filtering'
 
 #filter low GQ and DP genotypes 
-vcftools --vcf $vcffile --minGQ 20 --minDP 2 --recode --recode-INFO-all --out $outfile/finalized_snps
+vcftools --vcf $vcffile --minGQ 20 --minDP 4 --recode --recode-INFO-all --out $outfile/finalized_snps
