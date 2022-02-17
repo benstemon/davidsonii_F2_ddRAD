@@ -1,79 +1,103 @@
-# This program thins to best snp per radtag
-# written by JKK
+# -*- coding: utf-8 -*-
 
-# modified by Carrie
-# assumes you've already filtered for quality
+"""
+Created on Wed Dec 20 18:04:58 2017
 
-# modified by BWS 2/15/22
+@author: carrie
+
+this assumes the final two samples in the vcf are the parents.
+"""
+
+# modified by BWS
+# since v2:
+# Now disallows multi-bp variants in both ref and alt alleles
+# Now disallows missing data in either parent (problem may be unique to HaplotypeCaller?)
 # Now includes parsing for phased genotypes
-# Now includes additional parameter "radtaglength" -- minimum 
+# since v3: includes parsing for missing variants in parents on phased haplotype
 
-#parameters to modify
-############################
-MinMinor = 8 # min individuals that will have minor allele
+invcf = open('/work/bs66/davidsonii_mapping/mapping/vcf_filtering/filtered_genotyped_cohort.vcf.recode.vcf', 'rU')
+outfile = open('/work/bs66/davidsonii_mapping/mapping/vcf_filtering/biallelic_filteredMQ.vcf', 'w')
 
-vcf = open("/work/bs66/davidsonii_mapping/mapping/vcf_filtering/biallelic_filteredMQ.vcf", "rU")
-out2a = open('/work/bs66/davidsonii_mapping/mapping/vcf_filtering/best_ids_cohort.txt', 'w')
+nF2s = 83
+minIndiv = 50
+nsamples = nF2s + 2
+minMQ = 30
 
+def skipHeader(line):
+    cols = line.replace('\n','').split('\t')
+    if len(cols) < 2:
+        return 'header'
+    elif cols[0] == '#CHROM':
+        return 'header'
+    else:
+	return cols
 
-plants = 83 + 2 #F2 + parents
+def extractVCFfields(sampleData):
+    """ Extract data from sample-level fields in VCF file """
+    if any(y in sampleData.split(':')[0] for y in ('./.', '.|.')):
+        return 'missing'
+    else:
+        fields = sampleData.split(':')
+        if (len(fields) > 4):
+            alleleDepths = fields[1].split(',')
+            totDepth = fields[2]
+            phreds = fields[4].split(',')
+            return [totDepth, alleleDepths, phreds]
+        else:
+            return 'missing'
 
-radtaglength = 300#length of longest RadTags (e.g., 300 for 150bp PE reads)
+def findMapQual(infoField):
+    info = infoField.split(';')
+    listpos = len(info) - 1
+    MQscore = 0
 
-############################
+    while listpos > 0: # start searching for MQ from end of info field
+        if (info[listpos].split('='))[0] == 'MQ': # found it!
+            MQscore = float((info[listpos].split('='))[1])
+            listpos = 0
+        else:
+            listpos -= 1 # keep searching
+    return MQscore
+###################################################################
 
-
-#do not modify:
-last_scaff = ''
-bestsnp = ''
-lastpos = 0
-cp = 0
-
-bestlist = []
-
-for line_idx, line in enumerate(vcf):
-    cols = line.replace('\n', '').split('\t')
-    scaff = cols[0]
-    position = int(cols[1])
-    ref_base = cols[3]
-    alt_base = cols[4]
-    if line_idx % 10000 == 0:
-        print scaff, position
-
-    mincc = 0
-
-    if len(alt_base) == 1:
-        datums = [0, 0, 0]
-        for j in range(9, 9 + plants):
-            if cols[j] != "./." or ".|.":
-                geno = cols[j].split(":")[0]
-                if geno == "0/0" or geno == "0|0":
-                    datums[0] += 1
-                elif geno == "0/1" or geno == "0|1":
-                    datums[1] += 1
-                elif geno == "1/1" or geno == "1|1":
-                    datums[2] += 1
+for line in invcf:
+    cols = skipHeader(line)
+    if cols != 'header':
+        MQscore = findMapQual(cols[7])
+        #if MQ score beats threshold, collect reference and alternative call
+        if MQscore >= minMQ:
+            altBase = cols[4]
+            refBase = cols[3]
+            #if either the reference or alt call is > 1bp, do nothing
+            if len(altBase) > 1 or len(refBase) > 1:
+                pass
+                
+            else:
+                calls = 0
+                for j in range(9, 9+nsamples):
+                    annot = extractVCFfields(cols[j])
+                    if annot != 'missing':
+                        calls += 1
+                p1 = cols[nsamples-2 + 9]
+                p2 = cols[nsamples-1 + 9]
+                
+                #updated code for missing and phased data:
+                p1fields = p1.split(':')[0]
+                p2fields = p2.split(':')[0]
+                if any(x in p1fields for x in ('./.', '.|.', '0/1', '0|1', p2fields)):
+                    pass
+                elif any(x in p2fields for x in ('./.', '.|.', '0/1', '0|1')):
+                    pass
+                elif p1fields == '0|0' and p2fields == '0/0':
+                    pass
+                elif p1fields == '0/0' and p2fields == '0|0':
+                    pass
+                elif p1fields == '1|1' and p2fields == '1/1':
+                    pass
+                elif p1fields == '1/1' and p2fields == '1|1':
+                    pass
                 else:
-                    print "strange genotype: ", geno
-        mincc = min(datums[0] + datums[1], datums[2] + datums[1])
-#this isn't quite finding the best SNP per radtag.
-#It's finding the best SNP and ensuring there aren't others within 150 bp (or whatever).
-#You could lose some data if cut sites are close to mapped SNPs but on different RADtags.
-#The point though is to try to avoid obviously linked SNPs (eg same RADtag) and this does.
-        if scaff != last_scaff or (position - lastpos) > radtaglength:
-            if cp >= MinMinor:
-                out2a.write(bestsnp)
-            cp = mincc
-            bestsnp = scaff + '\t' + cols[1] + '\n'
-            last_scaff = scaff
-            lastpos = position
-        elif mincc > cp and position != lastpos:
-            cp = mincc
-            bestsnp = scaff + '\t' + cols[1] + '\n'
+                    if calls >= minIndiv:
+                        outfile.write(line)
 
-if cp >= MinMinor:
-    out2a.write(bestsnp)  # last snp
-
-out2a.close()
-
-
+outfile.close()
