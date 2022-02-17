@@ -219,9 +219,31 @@ gatk --java-options "-Xmx4g" GenotypeGVCFs -R $genomefile -V $vcffile -O $outdir
 
 
 ## VCF filtering
+### Use vcftools to filter reads by genotype quality (GQ) and read depth (DP)
+* See [`filterby_gq_dp.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/filterby_gq_dp_v2.sh)
+This script uses vcftools to do the following:
+    - change genotypes with genotype quality (GQ) < 20 and/or filtered depth (DP) < 4 to missing (./.)
+
+```shell
+#these calculations are very quick and do not require jobs to be sumbitted
+#can be performed easily on interactive node
+
+module load vcftools/0.1.17
+
+vcffile='/work/bs66/davidsonii_mapping/mapping/genotyping/genotyped_cohort.vcf.gz'
+outfile='/work/bs66/davidsonii_mapping/mapping/vcf_filtering'
+
+#filter low GQ and DP genotypes 
+vcftools --gzvcf $vcffile --minGQ 20 --minDP 4 --recode --recode-INFO-all --out $outfile/filtered_genotyped_cohort.vcf
+```
+
+
+
+
 ### Filter for biallelic SNPs with MQ > 30 that represent fixed differences between the two parent species
-* See [`1.filterVCF_v3.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/1.filterVCF_v3.py)
+* See [`filterVCF_v3.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/filterVCF_v3.py)
 * Requirements:
+    - python 2.7
     - .vcf.gz file created from previous step must be unzipped (gunzip)
     - Two parents, which are the last two individuals
 * In-file parameters (requires editing script):
@@ -229,257 +251,33 @@ gatk --java-options "-Xmx4g" GenotypeGVCFs -R $genomefile -V $vcffile -O $outdir
     - `minIndiv` = desired minimum number of individuals for which to filter a SNP
     - Specify infile and outfile parameters
 
-```python
-# -*- coding: utf-8 -*-
-
-"""
-Created on Wed Dec 20 18:04:58 2017
-
-@author: carrie
-
-this assumes the final two samples in the vcf are the parents.
-"""
-
-# modified by BWS
-# since v2:
-# Now disallows multi-bp variants in both ref and alt alleles
-# Now disallows missing data in either parent (problem may be unique to HaplotypeCaller?)
-# Now includes parsing for phased genotypes
-# since v3: includes parsing for missing variants in parents on phased haplotype
-
-invcf = open('genotyped_cohort.vcf', 'rU')
-outfile = open('filtered_cohort.vcf', 'w')
-
-nF2s = 83
-minIndiv = 50
-nsamples = nF2s + 2
-minMQ = 30
-
-def skipHeader(line):
-    cols = line.replace('\n','').split('\t')
-    if len(cols) < 2:
-        return 'header'
-    elif cols[0] == '#CHROM':
-        return 'header'
-    else:
-	return cols
-
-def extractVCFfields(sampleData):
-    """ Extract data from sample-level fields in VCF file """
-    if sampleData != './.':
-        fields = sampleData.split(':')
-        if (len(fields) > 4):
-            alleleDepths = fields[1].split(',')
-            totDepth = fields[2]
-            phreds = fields[4].split(',')
-            return [totDepth, alleleDepths, phreds]
-        else:
-            return 'missing'
-    else:
-        return 'missing'
-
-def findMapQual(infoField):
-    info = infoField.split(';')
-    listpos = len(info) - 1
-    MQscore = 0
-
-    while listpos > 0: # start searching for MQ from end of info field
-        if (info[listpos].split('='))[0] == 'MQ': # found it!
-            MQscore = float((info[listpos].split('='))[1])
-            listpos = 0
-        else:
-            listpos -= 1 # keep searching
-    return MQscore
-###################################################################
-
-for line in invcf:
-    cols = skipHeader(line)
-    if cols != 'header':
-        MQscore = findMapQual(cols[7])
-        #if MQ score beats threshold, collect reference and alternative call
-        if MQscore >= minMQ:
-            altBase = cols[4]
-            refBase = cols[3]
-            #if either the reference or alt call is > 1bp, do nothing
-            if len(altBase) > 1 or len(refBase) > 1:
-                pass
-                
-            else:
-                calls = 0
-                for j in range(9, 9+nsamples):
-                    annot = extractVCFfields(cols[j])
-                    if annot != 'missing':
-                        calls += 1
-                p1 = cols[nsamples-2 + 9]
-                p2 = cols[nsamples-1 + 9]
-                
-                #updated code for missing and phased data:
-                p1fields = p1.split(':')[0]
-                p2fields = p2.split(':')[0]
-                if any(x in p1fields for x in ('./.', '.|.', '0/1', '0|1', p2fields)):
-                    pass
-                elif any(x in p2fields for x in ('./.', '.|.', '0/1', '0|1')):
-                    pass
-                elif p1fields == '0|0' and p2fields == '0/0':
-                    pass
-                elif p1fields == '0/0' and p2fields == '0|0':
-                    pass
-                elif p1fields == '1|1' and p2fields == '1/1':
-                    pass
-                elif p1fields == '1/1' and p2fields == '1|1':
-                    pass
-                else:
-                    if calls >= minIndiv:
-                        outfile.write(line)
-
-outfile.close()
-```
 
 ### Find single best SNP per RADtag (most data + highest rare allele frequency)
-* See [`2.find_best_snp_v2.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/2.find_best_snp_v2.py)
-* This script just specifies which SNPs are selected. Directly after, use `3.thin_best_snp.py` (below) to extract SNPs to new .vcf file.
+* See [`find_best_snp_v2.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/find_best_snp_v2.py)
+* This script just specifies which SNPs are selected. Directly after, use `thin_best_snp.py` (below) to extract SNPs to new .vcf file.
 * Requirements:
-    - filtered .vcf file (output from `1.filterVCF_v2.py`)
+    - filtered .vcf file (output from `filterVCF_v3.py`)
 * In-file parameters (requires editing script):
     - `MinMinor` = Minimum number of individuals that can have minor allele for SNP to be selected
     - `plants` = Number of F2s + number of parents in .vcf
     - `radtaglength` = Minimum bp distance apart that selected SNPs can be (e.g., if data are 150bp SE data, this value should be 150)
     - Specify infile and outfile
 
-```python
-# This program thins to best snp per radtag
-# written by JKK
-
-# modified by Carrie
-# assumes you've already filtered for quality
-
-# modified by BWS 2/15/22
-# Now includes parsing for phased genotypes
-# Now includes additional parameter "radtaglength" -- minimum 
-
-#parameters to modify
-############################
-MinMinor = 8 # min individuals that will have minor allele
-
-vcf = open("filtered_cohort.vcf", "rU")
-out2a = open('best_ids_cohort.txt', 'w')
-
-
-plants = 83 + 2 #F2 + parents
-
-radtaglength = 300#length of longest RadTags (e.g., 300 for 150bp PE reads)
-
-############################
-
-
-#do not modify:
-last_scaff = ''
-bestsnp = ''
-lastpos = 0
-cp = 0
-
-bestlist = []
-
-for line_idx, line in enumerate(vcf):
-    cols = line.replace('\n', '').split('\t')
-    scaff = cols[0]
-    position = int(cols[1])
-    ref_base = cols[3]
-    alt_base = cols[4]
-    if line_idx % 10000 == 0:
-        print scaff, position
-
-    mincc = 0
-
-    if len(alt_base) == 1:
-        datums = [0, 0, 0]
-        for j in range(9, 9 + plants):
-            if cols[j] != "./.":
-                geno = cols[j].split(":")[0]
-                if geno == "0/0" or geno == "0|0":
-                    datums[0] += 1
-                elif geno == "0/1" or geno == "0|1":
-                    datums[1] += 1
-                elif geno == "1/1" or geno == "1|1":
-                    datums[2] += 1
-                else:
-                    print "strange genotype: ", geno
-        mincc = min(datums[0] + datums[1], datums[2] + datums[1])
-#this isn't quite finding the best SNP per radtag.
-#It's finding the best SNP and ensuring there aren't others within 150 bp (or whatever).
-#You could lose some data if cut sites are close to mapped SNPs but on different RADtags.
-#The point though is to try to avoid obviously linked SNPs (eg same RADtag) and this does.
-        if scaff != last_scaff or (position - lastpos) > radtaglength:
-            if cp >= MinMinor:
-                out2a.write(bestsnp)
-            cp = mincc
-            bestsnp = scaff + '\t' + cols[1] + '\n'
-            last_scaff = scaff
-            lastpos = position
-        elif mincc > cp and position != lastpos:
-            cp = mincc
-            bestsnp = scaff + '\t' + cols[1] + '\n'
-
-if cp >= MinMinor:
-    out2a.write(bestsnp)  # last snp
-
-out2a.close()
-```
 
 ### Extract best SNP per RADtag
-* See [`3.thin_best_snp.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/3.thin_best_snp.py)
+* See [`thin_best_snp.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/thin_best_snp.py)
 * Requirements:
-    - filtered .vcf file (output from `1.filterVCF_v2.py`)
-    - best_ids .txt output from preceding step (`2.find_best_snp_v2.py`)
+    - filtered .vcf file (output from `filterVCF_v3.py`)
+    - best_ids .txt output from preceding step (`find_best_snp_v2.py`)
 * In-file parameteres (requires editing script):
     - Specify best_ids .txt file, filtered .vcf file, and outfile
 
-```python
-# Code originally from Carrie Wessinger
-# Modified by BWS 2/15/22
 
-in2a = open('best_ids_cohort.txt', 'rU')#best_ids file
-vcf = open("filtered_cohort.vcf", "rU")#filtered .vcf file
-outfile = open("bestsnps_cohort.vcf", 'w')
-
-bestlist = []
-for line in in2a:
-    cols = line.replace('\n', '').split('\t')
-    bestlist.append([cols[0], cols[1]])
-
-for line in vcf:
-    cols = line.replace('\n', '').split('\t')
-    tig = cols[0]
-    pos = cols[1]
-    for x in bestlist:
-        if tig == x[0] and pos == x[1]:
-            outfile.write(line)
-
-outfile.close()
-```
-
-### Use vcftools to filter reads by genotype quality (GQ) and read depth (DP)
-* See [`4.filterby_gq_dp.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/4.filterby_gq_dp.sh)
-This script uses vcftools to do the following:
-    - change genotypes with genotype quality (GQ) < 20 and/or filtered depth (DP) < 2 to missing (./.)
-
-```shell
-#these calculations are very quick and do not require jobs to be sumbitted
-#can be performed easily on interactive node
-
-module load vcftools/0.1.17
-
-vcffile='/work/bs66/davidsonii_mapping/vcf_filtering/bestsnps_cohort_addheader.vcf'
-outfile='/work/bs66/davidsonii_mapping/vcf_filtering'
-
-#filter low GQ and DP genotypes 
-vcftools --vcf $vcffile --minGQ 20 --minDP 2 --recode --recode-INFO-all --out $outfile/finalized_snps
-```
 
 
 ### Use vcftools to calculate heterozygosity and inbreeding coefficients per individual, and other summary statistics
 * Note that prior to this step I pasted the .vcf heading back onto the filtered output so vcftools would be able to recognize the file
-* See [`5.generate_vcf_sumstats.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/5.generate_vcf_sumstats.sh)
+* See [`generate_vcf_sumstats.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/generate_vcf_sumstats.sh)
 
 
 ```shell
@@ -488,8 +286,8 @@ vcftools --vcf $vcffile --minGQ 20 --minDP 2 --recode --recode-INFO-all --out $o
 
 module load vcftools/0.1.17
 
-vcffile='/work/bs66/davidsonii_mapping/vcf_filtering/finalized_snps.recode.vcf'
-outfile='/work/bs66/davidsonii_mapping/vcf_filtering/summary_outfiles/out_vcf'
+vcffile='/work/bs66/davidsonii_mapping/mapping/vcf_filtering/finalized_snps.vcf'
+outfile='/work/bs66/davidsonii_mapping/mapping/vcf_filtering/summary_outfiles/out_vcf'
 
 #calculate allele frequency distributions
 vcftools --vcf $vcffile --freq2 --out $outfile
@@ -511,15 +309,14 @@ vcftools --vcf $vcffile --missing-site --out $outfile
 
 #heterozygosity and inbreeding coefficient per individual
 vcftools --vcf $vcffile --het --out $outfile
-
 ```
 
-* Also interested in QD score (quality score normalized by read depth -- avoids inflation caused by deep coverage) and GQ score (genotype quality score -- 
+* Also interested in QD score (quality score normalized by read depth -- avoids inflation caused by deep coverage) and GQ score (genotype quality score)
 * See [`grab_QD_score.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/grab_QD_score.sh)
 ```shell
-egrep -v "^#" finalized_snps.recode.vcf | \
+egrep -v "^#" finalized_snps.vcf | \
 cut -f 8 | \
-sed 's/^.*;QD=\([0-9]*.[0-9]*\);.*$/\1/' > summary_outfiles/QD.txt
+sed 's/^.*;QD=\([0-9]*.[0-9]*\);.*$/\1/' > summary_outfiles/out_vcf.QD.txt
 ```
 
 
