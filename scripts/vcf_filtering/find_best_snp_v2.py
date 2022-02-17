@@ -45,7 +45,7 @@ for line_idx, line in enumerate(vcf):
     if len(alt_base) == 1:
         datums = [0, 0, 0]
         for j in range(9, 9 + plants):
-            if cols[j] != "./.":
+            if cols[j] != "./." or ".|.":
                 geno = cols[j].split(":")[0]
                 if geno == "0/0" or geno == "0|0":
                     datums[0] += 1
