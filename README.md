@@ -219,7 +219,7 @@ gatk --java-options "-Xmx4g" GenotypeGVCFs -R $genomefile -V $vcffile -O $outdir
 
 ## VCF filtering
 ### Filter for biallelic SNPs with MQ > 30 that represent fixed differences between the two parent species
-* See [`1.filterVCF_v2.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/1.filterVCF_v2.py)
+* See [`1.filterVCF_v3.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/1.filterVCF_v3.py)
 * Requirements:
     - .vcf.gz file created from previous step must be unzipped (gunzip)
     - Two parents, which are the last two individuals
@@ -239,10 +239,12 @@ Created on Wed Dec 20 18:04:58 2017
 this assumes the final two samples in the vcf are the parents.
 """
 
-# modified by BWS 2/15/22
+# modified by BWS
+# since v2:
 # Now disallows multi-bp variants in both ref and alt alleles
-# Now disallows missing data in either parent
+# Now disallows missing data in either parent (problem may be unique to HaplotypeCaller?)
 # Now includes parsing for phased genotypes
+# since v3: includes parsing for missing variants in parents on phased haplotype
 
 invcf = open('genotyped_cohort.vcf', 'rU')
 outfile = open('filtered_cohort.vcf', 'w')
@@ -313,9 +315,9 @@ for line in invcf:
                 #updated code for missing and phased data:
                 p1fields = p1.split(':')[0]
                 p2fields = p2.split(':')[0]
-                if any(x in p1fields for x in ('./.', '0/1', '0|1', p2fields)):
+                if any(x in p1fields for x in ('./.', '.|.', '0/1', '0|1', p2fields)):
                     pass
-                elif any(x in p2fields for x in ('./.', '0/1', '0|1')):
+                elif any(x in p2fields for x in ('./.', '.|.', '0/1', '0|1')):
                     pass
                 elif p1fields == '0|0' and p2fields == '0/0':
                     pass
