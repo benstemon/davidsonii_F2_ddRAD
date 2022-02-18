@@ -309,6 +309,9 @@ vcftools --vcf $vcffile --missing-site --out $outfile
 
 #heterozygosity and inbreeding coefficient per individual
 vcftools --vcf $vcffile --het --out $outfile
+
+#p values from hardy weinberg test
+vcftools --vcf $vcffile --hardy --out $outfile
 ```
 
 * Also interested in QD score (quality score normalized by read depth -- avoids inflation caused by deep coverage) and GQ score (genotype quality score)
