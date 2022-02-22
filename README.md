@@ -295,25 +295,25 @@ do
     filehead="${i##*/}"
     
     #calculate allele frequency distributions
-    vcftools --vcf $i/$filehead.vcf --freq2 -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i/finalized_snps_$filehead.vcf --freq2 --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #mean depth/individual
-    vcftools --vcf $i/$filehead.vcf --depth -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i/finalized_snps_$filehead.vcf --depth --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #mean depth/site
-    vcftools --vcf $i/$filehead.vcf --site-mean-depth -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i/finalized_snps_$filehead.vcf --site-mean-depth --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #site quality
-    vcftools --vcf $i/$filehead.vcf --site-quality -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i/finalized_snps_$filehead.vcf --site-quality --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #proportion missing data/individual
-    vcftools --vcf $i/$filehead.vcf --missing-indv -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i/finalized_snps_$filehead.vcf --missing-indv --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #proportion missing data/site
-    vcftools --vcf $i/$filehead.vcf --missing-site -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i/finalized_snps_$filehead.vcf --missing-site --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #heterozygosity and inbreeding coefficient per individual
-    vcftools --vcf $i/$filehead.vcf --het -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i/finalized_snps_$filehead.vcf --het --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #quality by depth 
     egrep -v "^#" $i/finalized_snps_$filehead.vcf | \
