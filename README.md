@@ -330,6 +330,17 @@ done
 * See [`davF2_filterVCF_results.pdf`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/results/davF2_filterVCF_results.pdf) for results and [`davF2_filterVCF_results.md`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/results/davF2_filterVCF_results.rmd) for code
 
 
+
+
+
+## Create linkage map in Lep-Map3
+### Convert .vcf to lepmap input
+* See [`generate_lepmap_files_v2.py`]()
+* Also requires plain .txt file with names of F2s in order -- see [`F2_namefile.txt`]()
+
+
+
+
 ### Notes
 * Something to consider for attempting parallelization.
 ```
