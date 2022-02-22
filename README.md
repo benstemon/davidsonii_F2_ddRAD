@@ -241,7 +241,7 @@ vcftools --gzvcf $vcffile --minGQ 20 --minDP 4 --recode --recode-INFO-all --out 
 
 
 ### Filter for biallelic SNPs with MQ > 30 that represent fixed differences between the two parent species
-* See [`filterVCF_v3.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/filterVCF_v3.py)
+* See [`filterVCF_v4.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/filterVCF_v4.py)
 * Requirements:
     - python 2.7
     - .vcf.gz file created from previous step must be unzipped (gunzip)
@@ -271,7 +271,7 @@ vcftools --gzvcf $vcffile --minGQ 20 --minDP 4 --recode --recode-INFO-all --out 
         - I set this to 8 individuals
     - `plants` = Number of F2s + number of parents in .vcf
     - `radtaglength` = Minimum bp distance apart that selected SNPs can be
-        - I tested two different RADtag lengths: 150bp and 300 bp
+        - I set this to 300 bp
     - Specify infile and outfile parameters
 
 
@@ -322,10 +322,12 @@ do
 done
 ```
 
+### Calculate heterozygosity, read depth, etc. per individual
+* See [`calc.sample.coverage.from.vcf_v2`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/calc.sample.coverage.from.vcf_v2.py)
 
 
-
-
+### Visualize results of VCF filtering
+* See [`davF2_filterVCF_results.pdf`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/results/davF2_filterVCF_results.pdf) for results and [`davF2_filterVCF_results.md`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/results/davF2_filterVCF_results.rmd) for code
 
 
 ### Notes
