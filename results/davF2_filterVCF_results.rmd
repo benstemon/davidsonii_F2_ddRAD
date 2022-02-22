@@ -1,0 +1,148 @@
+---
+title: "davidsonii F2 mapping: VCF filtering"
+#date: 2022-02-22
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = '~/workdir/data/summary_outfiles')
+library(tidyverse)
+library(ggplot2)
+library(tinytex)
+prefix <- 'out_vcf_min50_hwe.30_300bp'
+```
+
+This report is for min50_hwe.30_300bp. The VCF file was filtered in the following way:
+
+
+* minimum Genotype quality is 20 (99% accuracy)
+* minimum allele depth is 4
+* minimum Mapping Quality is 30
+* no more than ~40% missing data (50 or more individuals must be present)
+* allele frequencies must be in hardy-weinberg proportions, and 0.3 $\leq$ q $\leq$ 0.7
+* Single SNP per 300 bp
+* at least 8 individuals with minor allele
+
+
+**This resulted in a data set with 1427 SNPs.**
+
+
+
+### Quality by depth
+GATK best practices recommend filtering QD < 2
+
+```{r, echo=FALSE, message=FALSE}
+t <- read_table(paste(prefix, '.QD.txt', sep=''), col_names = 'QD')
+ggplot(t, aes(QD)) +
+  geom_density(fill = "orange", colour = "black", alpha = 0.3) +
+  xlim(0,40) +
+  theme_classic()
+```
+
+This looks very good. We have no low quality sites. After filtering, there are no sites with QD < 5:
+```{r}
+length(which(t<5))
+```
+
+### Depth of Coverage
+Higher coverage is better, obviously. But, reads with too high coverage could be mapping/assembly errors and/or repetitive regions. Ravinet & Meier suggest a good "rule of thumb" is filtering max depth > 2x mean depth, but I have seen less stringent filters elsewhere.
+
+```{r, echo=FALSE, message=FALSE}
+t <- read_delim(paste(prefix, '.ldepth.mean', sep = ''), delim = '\t')
+ggplot(t, aes(MEAN_DEPTH)) + 
+  geom_density(fill = "blue", colour = "black", alpha = 0.3) +
+  xlim(0,150) +
+  theme_classic()
+```
+
+This looks pretty good. If we look for the proportion of reads > 2x mean depth...
+```{r}
+length(which(t$MEAN_DEPTH > mean(t$MEAN_DEPTH)*2))/nrow(t)
+```
+
+12.3% are higher than 2x mean. But none are particularly high coverage. Given this is ddrad data, nothing here screams mapping error to me. We also have nothing with particularly low coverage:
+
+```{r}
+length(which(t$MEAN_DEPTH < 10))/nrow(t)
+length(which(t$MEAN_DEPTH < 5))/nrow(t)
+```
+
+
+### Missing Data
+```{r, echo=FALSE, message=FALSE}
+t <- read_delim(paste(prefix, '.lmiss', sep = ''), delim = '\t')
+ggplot(t, aes(F_MISS)) + 
+  geom_density(fill = "red", colour = "black", alpha = 0.3) +
+  xlim(0,1) +
+  theme_classic()
+```
+
+Looks how we would expect: we filtered for no more than 33 individuals with missing data (~40%)
+
+
+### Minor Allele Frequency
+```{r, echo=FALSE, message=FALSE}
+t <- read_delim(paste(prefix, '.frq', sep = ''), delim = '\t',
+                col_names = c("chr", "pos", "nalleles", "nchr", "a1", "a2"), skip = 1)
+#this is just allele freqs. Need to calc MAF.
+t$maf <- t %>% select(a1, a2) %>% apply(1, function(z) min(z))
+ggplot(t, aes(maf)) + 
+  geom_density(fill = "black", colour = "black", alpha = 0.3) +
+  xlim(0,0.5) +
+  theme_classic()
+```
+
+Again, we filtered this so that minor allele frequency is always > 0.3. So no surprise.
+
+## Heterozygosity
+The remaining plots are generated from sites extracted from calc.sample.coverage.from.vcf.py.
+```{r, echo=FALSE, message=FALSE}
+library(gridExtra)
+
+cov <- read.delim('~/workdir/vcf.sample.coverage.txt', header = T)
+F2s <- droplevels(filter(cov, sample != 'PopF2_DNT006' & sample != 'PopF2_PP56'))
+```
+
+
+### Total sites
+```{r, echo=FALSE, message=FALSE}
+ggplot(F2s, aes(sites)) +
+  geom_density(fill = "grey", col = "black") +
+  xlim(500,1500) +
+  theme_classic()
+```
+
+The majority of individuals have > 1000 sites.
+
+
+### Median depth per site
+```{r, echo=FALSE, message=FALSE}
+ggplot(F2s, aes(median_depth_persite)) +
+  geom_density(fill = "grey", col = "black") +
+  xlim(0,60) +
+  theme_classic()
+```
+
+The mediant depth/site is much higher than Carrie's example with *barbatus* *neomexicanus* F2s. This is presumably because I filtered GQ < 20. With a less stringent filter there we could return much more data
+
+
+### Heterozygosity/sample
+```{r, echo=FALSE, message=FALSE}
+ggplot(F2s, aes(het_freq)) +
+  geom_density(fill = "yellow", col = "black") +
+  xlim(0,1) +
+  theme_classic()
+```
+
+A nice bell curve centered around ~50%. There are no individuals with < 20% heterozygosity.
+
+
+### Heterozygosity by number of sites
+```{r, echo=FALSE, message=FALSE}
+ggplot(F2s, aes(x = sites, y = het_freq)) +
+  geom_point() +
+  theme_classic()
+```
+
+Don't see a similar issue with Carrie's data set regarding relationship between number of reads/heterozygosity. Given the strict filters we imposed this was likely to be the case. However this also leaves us with fewer data. Relaxing thresholds on missing data and on genotype quality (QC) would increase the number of SNPs.
+
