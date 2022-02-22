@@ -249,35 +249,35 @@ vcftools --gzvcf $vcffile --minGQ 20 --minDP 4 --recode --recode-INFO-all --out 
 * In-file parameters (requires editing script):
     - `nF2s` = number of F2s in .vcf
     - `minIndiv` = desired minimum number of individuals for which to filter a SNP
+        - I tested three missing data thresholds: minimums of 25, 42, and 50 individuals (70%, 50%, and 40% missing data/locus allowed, respectively)
     - Specify infile and outfile parameters
 
 
-### Find single best SNP per RADtag (most data + highest rare allele frequency)
-* See [`find_best_snp_v2.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/find_best_snp_v2.py)
-* This script just specifies which SNPs are selected. Directly after, use `thin_best_snp.py` (below) to extract SNPs to new .vcf file.
+### Filter based on Hardy-Weinberg proportions
+* See filterVCF.q.hwe.py
+* Only keep loci with HWE significance > 0.01
+* Tested two minimum allele frequencies:
+    - 0.4 ≤ q ≤ 0.6
+    - 0.3 ≤ q ≤ 0.7
+
+
+### Find and extract single best SNP per RADtag (most data + highest rare allele frequency)
+* See [`find_best_snp_v2.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/find_best_snp_v2.py) and [`thin_best_snp.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/thin_best_snp.py)
+* `find_best_snp_v2.py` specifies which SNPs are selected. Directly after, use `thin_best_snp.py` to extract SNPs to new .vcf file.
 * Requirements:
     - filtered .vcf file (output from `filterVCF_v3.py`)
 * In-file parameters (requires editing script):
     - `MinMinor` = Minimum number of individuals that can have minor allele for SNP to be selected
+        - I set this to 8 individuals
     - `plants` = Number of F2s + number of parents in .vcf
-    - `radtaglength` = Minimum bp distance apart that selected SNPs can be (e.g., if data are 150bp SE data, this value should be 150)
-    - Specify infile and outfile
-
-
-### Extract best SNP per RADtag
-* See [`thin_best_snp.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/thin_best_snp.py)
-* Requirements:
-    - filtered .vcf file (output from `filterVCF_v3.py`)
-    - best_ids .txt output from preceding step (`find_best_snp_v2.py`)
-* In-file parameteres (requires editing script):
-    - Specify best_ids .txt file, filtered .vcf file, and outfile
-
-
+    - `radtaglength` = Minimum bp distance apart that selected SNPs can be
+        - I tested two different RADtag lengths: 150bp and 300 bp
+    - Specify infile and outfile parameters
 
 
 ### Use vcftools to calculate heterozygosity and inbreeding coefficients per individual, and other summary statistics
 * Note that prior to this step I pasted the .vcf heading back onto the filtered output so vcftools would be able to recognize the file
-* See [`generate_vcf_sumstats.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/generate_vcf_sumstats.sh)
+* See [`generate_vcf_sumstats_v2.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/generate_vcf_sumstats_v2.sh)
 
 
 ```shell
@@ -286,41 +286,44 @@ vcftools --gzvcf $vcffile --minGQ 20 --minDP 4 --recode --recode-INFO-all --out 
 
 module load vcftools/0.1.17
 
-vcffile='/work/bs66/davidsonii_mapping/mapping/vcf_filtering/finalized_snps.vcf'
-outfile='/work/bs66/davidsonii_mapping/mapping/vcf_filtering/summary_outfiles/out_vcf'
+infiledir='/work/bs66/davidsonii_mapping/mapping/vcf_filtering/data'
 
-#calculate allele frequency distributions
-vcftools --vcf $vcffile --freq2 --out $outfile
 
-#mean depth/individual
-vcftools --vcf $vcffile --depth --out $outfile
-
-#mean depth/site
-vcftools --vcf $vcffile --site-mean-depth --out $outfile
-
-#site quality
-vcftools --vcf $vcffile --site-quality --out $outfile
-
-#proportion missing data/individual
-vcftools --vcf $vcffile --missing-indv --out $outfile
-
-#proportion missing data/site
-vcftools --vcf $vcffile --missing-site --out $outfile
-
-#heterozygosity and inbreeding coefficient per individual
-vcftools --vcf $vcffile --het --out $outfile
-
-#p values from hardy weinberg test
-vcftools --vcf $vcffile --hardy --out $outfile
+for i in $infiledir/*;
+do
+    #for moving throughout directories
+    filehead="${i##*/}"
+    
+    #calculate allele frequency distributions
+    vcftools --vcf $i/$filehead.vcf --freq2 -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    
+    #mean depth/individual
+    vcftools --vcf $i/$filehead.vcf --depth -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    
+    #mean depth/site
+    vcftools --vcf $i/$filehead.vcf --site-mean-depth -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    
+    #site quality
+    vcftools --vcf $i/$filehead.vcf --site-quality -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    
+    #proportion missing data/individual
+    vcftools --vcf $i/$filehead.vcf --missing-indv -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    
+    #proportion missing data/site
+    vcftools --vcf $i/$filehead.vcf --missing-site -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    
+    #heterozygosity and inbreeding coefficient per individual
+    vcftools --vcf $i/$filehead.vcf --het -- out $infiledir/summary_outfiles/out_vcf_$filehead
+    
+    #quality by depth 
+    egrep -v "^#" $i/finalized_snps_$filehead.vcf | \
+    cut -f 8 | \
+    sed 's/^.*;QD=\([0-9]*.[0-9]*\);.*$/\1/' > $infiledir/summary_outfiles/out_vcf_$filehead.QD.txt
+done
 ```
 
-* Also interested in QD score (quality score normalized by read depth -- avoids inflation caused by deep coverage) and GQ score (genotype quality score)
-* See [`grab_QD_score.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/grab_QD_score.sh)
-```shell
-egrep -v "^#" finalized_snps.vcf | \
-cut -f 8 | \
-sed 's/^.*;QD=\([0-9]*.[0-9]*\);.*$/\1/' > summary_outfiles/out_vcf.QD.txt
-```
+
+
 
 
 
