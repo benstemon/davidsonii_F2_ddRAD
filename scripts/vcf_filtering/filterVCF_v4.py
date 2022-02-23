@@ -11,9 +11,10 @@ this assumes the final two samples in the vcf are the parents.
 # modified by BWS
 # since v2:
 # Now disallows multi-bp variants in both ref and alt alleles
-# Now disallows missing data in either parent (problem may be unique to HaplotypeCaller?)
-# Now includes parsing for phased genotypes
-# since v3: includes parsing for missing variants in parents on phased haplotype
+# Now correctly disallows missing data in either parent for phased haplotypes
+# Now correctly recognizes matching genotypes between parents with phased haplotypes
+# since v3: includes parsing for missing variants in parents with phased haplotype (.|.)
+# since v4: extractVCFfields extracts correct value for phred score for phased haplotypes
 
 invcf = open('/work/bs66/davidsonii_mapping/mapping/vcf_filtering/filtered_genotyped_cohort.vcf.recode.vcf', 'rU')
 outfile = open('/work/bs66/davidsonii_mapping/mapping/vcf_filtering/biallelic_filteredMQ_min50.vcf', 'w')
@@ -30,14 +31,14 @@ def skipHeader(line):
     elif cols[0] == '#CHROM':
         return 'header'
     else:
-	return cols
+        return cols
 
+#updated this function for variable length columns (phased vs. not)
 def extractVCFfields(sampleData):
     """ Extract data from sample-level fields in VCF file """
     if any(y in sampleData.split(':')[0] for y in ('./.', '.|.')):
         return 'missing'
     else:
-    #updated for variable length columns (phased vs. not)
         fields = sampleData.split(':')
         if (len(fields) == 5):
             alleleDepths = fields[1].split(',')
