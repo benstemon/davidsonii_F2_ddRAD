@@ -242,7 +242,7 @@ This script uses vcftools to do the following:
 
 
 ### Filter based on Hardy-Weinberg proportions
-* See filterVCF.q.hwe.py
+* [`See filterVCF.q.hwe_v2.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/filterVCF.q.hwe_v2.py)
 * Only keep loci with HWE significance > 0.01
 * Tested two minimum allele frequencies:
     - 0.4 ≤ q ≤ 0.6
@@ -312,7 +312,7 @@ done
 ```
 
 ### Calculate heterozygosity, read depth, etc. per individual
-* See [`calc.sample.coverage.from.vcf_v2`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/calc.sample.coverage.from.vcf_v2.py)
+* See [`calc.sample.coverage.from.vcf_v3`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/calc.sample.coverage.from.vcf_v3.py)
 
 
 ### Visualize results of VCF filtering
