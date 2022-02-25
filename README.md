@@ -220,7 +220,7 @@ gatk --java-options "-Xmx4g" GenotypeGVCFs -R $genomefile -V $vcffile -O $outdir
 
 ## VCF filtering
 ### Use vcftools to filter reads by genotype quality (GQ) and read depth (DP)
-## NOTE: THIS STEP HAS BEEN REMOVED FROM THE PIPELINE!!!
+### NOTE: THIS STEP HAS BEEN REMOVED FROM THE PIPELINE!!!
 * See [`filterby_gq_dp.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/filterby_gq_dp_v2.sh)
 This script uses vcftools to do the following:
     - change genotypes with genotype quality (GQ) < 20 and/or filtered depth (DP) < 4 to missing (./.)
@@ -247,7 +247,7 @@ This script uses vcftools to do the following:
 * Tested two minimum allele frequencies:
     - 0.4 ≤ q ≤ 0.6
     - 0.3 ≤ q ≤ 0.7
-# Note: after testing, only kept 0.3
+Note: after testing, only kept 0.3
 
 
 ### Find and extract single best SNP per RADtag (most data + highest rare allele frequency)
