@@ -3,7 +3,8 @@
 
 module load vcftools/0.1.17
 
-infiledir='/work/bs66/davidsonii_mapping/mapping/vcf_filtering/data'
+infiledir='/work/bs66/davidsonii_mapping/mapping/vcf_filtering_no-phase/finalized_data_no-phase'
+mkdir $infiledir/summary_outfiles
 
 
 for i in $infiledir/*;
@@ -12,28 +13,28 @@ do
     filehead="${i##*/}"
     
     #calculate allele frequency distributions
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --freq2 --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --freq2 --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #mean depth/individual
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --depth --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --depth --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #mean depth/site
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --site-mean-depth --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --site-mean-depth --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #site quality
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --site-quality --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --site-quality --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #proportion missing data/individual
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --missing-indv --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --missing-indv --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #proportion missing data/site
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --missing-site --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --missing-site --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #heterozygosity and inbreeding coefficient per individual
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --het --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --het --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #quality by depth 
-    egrep -v "^#" $i/finalized_snps_$filehead.vcf | \
+    egrep -v "^#" $i | \
     cut -f 8 | \
     sed 's/^.*;QD=\([0-9]*.[0-9]*\);.*$/\1/' > $infiledir/summary_outfiles/out_vcf_$filehead.QD.txt
 done
