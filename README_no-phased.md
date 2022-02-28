@@ -219,14 +219,6 @@ gatk --java-options "-Xmx4g" GenotypeGVCFs -R $genomefile -V $vcffile -O $outdir
 
 
 ## VCF filtering
-### Use vcftools to filter reads by genotype quality (GQ) and read depth (DP)
-### NOTE: THIS STEP HAS BEEN REMOVED FROM THE PIPELINE!!!
-* See [`filterby_gq_dp.sh`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/filterby_gq_dp_v2.sh)
-This script uses vcftools to do the following:
-    - change genotypes with genotype quality (GQ) < 20 and/or filtered depth (DP) < 4 to missing (./.)
-
-
-
 
 ### Filter for biallelic SNPs with MQ > 30 that represent fixed differences between the two parent species
 * See [`filterVCF_v4.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/filterVCF_v4.py)
@@ -237,17 +229,15 @@ This script uses vcftools to do the following:
 * In-file parameters (requires editing script):
     - `nF2s` = number of F2s in .vcf
     - `minIndiv` = desired minimum number of individuals for which to filter a SNP
-        - I tested three missing data thresholds: minimums of 25, 42, and 50 individuals (70%, 50%, and 40% missing data/locus allowed, respectively)
+        - I set this to a minimum of 50 individuals/locus
     - Specify infile and outfile parameters
 
 
 ### Filter based on Hardy-Weinberg proportions
 * [`See filterVCF.q.hwe_v2.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/filterVCF.q.hwe_v2.py)
 * Only keep loci with HWE significance > 0.01
-* Tested two minimum allele frequencies:
-    - 0.4 ≤ q ≤ 0.6
+* Required allele frequences:
     - 0.3 ≤ q ≤ 0.7
-Note: after testing, only kept 0.3
 
 
 ### Find and extract single best SNP per RADtag (most data + highest rare allele frequency)
@@ -275,7 +265,8 @@ Note: after testing, only kept 0.3
 
 module load vcftools/0.1.17
 
-infiledir='/work/bs66/davidsonii_mapping/mapping/vcf_filtering/data'
+infiledir='/work/bs66/davidsonii_mapping/mapping/vcf_filtering_no-phase/finalized_data_no-phase'
+mkdir $infiledir/summary_outfiles
 
 
 for i in $infiledir/*;
@@ -284,28 +275,28 @@ do
     filehead="${i##*/}"
     
     #calculate allele frequency distributions
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --freq2 --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --freq2 --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #mean depth/individual
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --depth --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --depth --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #mean depth/site
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --site-mean-depth --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --site-mean-depth --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #site quality
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --site-quality --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --site-quality --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #proportion missing data/individual
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --missing-indv --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --missing-indv --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #proportion missing data/site
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --missing-site --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --missing-site --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #heterozygosity and inbreeding coefficient per individual
-    vcftools --vcf $i/finalized_snps_$filehead.vcf --het --out $infiledir/summary_outfiles/out_vcf_$filehead
+    vcftools --vcf $i --het --out $infiledir/summary_outfiles/out_vcf_$filehead
     
     #quality by depth 
-    egrep -v "^#" $i/finalized_snps_$filehead.vcf | \
+    egrep -v "^#" $i | \
     cut -f 8 | \
     sed 's/^.*;QD=\([0-9]*.[0-9]*\);.*$/\1/' > $infiledir/summary_outfiles/out_vcf_$filehead.QD.txt
 done
@@ -316,7 +307,7 @@ done
 
 
 ### Visualize results of VCF filtering
-* See [`davF2_filterVCF_results.pdf`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/results/davF2_filterVCF_results.pdf) for results and [`davF2_filterVCF_results.md`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/results/davF2_filterVCF_results.rmd) for code
+* See [`davF2_filterVCF_results_no-phase.pdf`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/results/davF2_filterVCF_results_no-phase.pdf) for results and [`davF2_filterVCF_results.md`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/results/davF2_filterVCF_results_no-phase.rmd) for code
 
 
 
