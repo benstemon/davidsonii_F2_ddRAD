@@ -220,6 +220,10 @@ gatk --java-options "-Xmx4g" GenotypeGVCFs -R $genomefile -V $vcffile -O $outdir
 
 ## VCF filtering
 
+### "Fix" calls with genotype ambiguity and missing data (>1 genotype given phred score of 0)
+* See [`fix_vcf_geno_calls.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/fix_vcf_geno_calls.py)
+* changes calls to missing data, and changes format of missing data call to simply './.' (no other call information)
+
 ### Filter for biallelic SNPs with MQ > 30 that represent fixed differences between the two parent species
 * See [`filterVCF_v4.py`](https://github.com/benstemon/davidsonii_F2_ddRAD/blob/main/scripts/vcf_filtering/filterVCF_v4.py)
 * Requirements:
