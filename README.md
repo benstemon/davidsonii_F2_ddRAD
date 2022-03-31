@@ -321,16 +321,14 @@ done
 ### Convert .vcf to lepmap input
 * See [`generate_lepmap_files_v2.py`]()
 * Also requires plain .txt file with names of F2s in order -- see [`F2_namefile.txt`]()
+* Perform these steps to make linkage groups
+
+
+### Manual re-ordering of markers based on information from dotplots with P. barbatus and P. petiolatus
+* Create genome hypothesis-like text file with hypothetical genome rearrangements
+* [`manual.order.snps.py`]
 
 
 
 
-### Notes
-* Something to consider for attempting parallelization.
-```
---native-pair-hmm-threads 2 
-```
-* Could consider joining the GVCF merging step and the genotyping step.
-
-* Consider Variant recalibration (gatk VQSR) on the joint gvcfs?
 
